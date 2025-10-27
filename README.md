@@ -318,6 +318,24 @@ All systems use the same wire format:
 [type: 1 byte][name_length: 4 bytes LE][name: UTF-8][value_size: 4 bytes LE][value: bytes]
 ```
 
+### Cross-Language Integration Tests
+
+The project includes comprehensive cross-language compatibility tests (`tests/cross_language.test.ts`) that verify:
+
+1. **Type ID Mapping**: All type IDs match the C++ standard (container_system/core/value_types.h)
+2. **Wire Format Compliance**: Serialization format follows the specification exactly
+3. **32-bit Long/ULong Policy**: LongValue (type 6) and ULongValue (type 7) serialize to exactly 4 bytes
+4. **Round-trip Serialization**: Data can be serialized and deserialized without loss
+5. **Binary Compatibility**: Generated test data files can be read by other language implementations
+
+To generate test data files for cross-language validation:
+
+```bash
+npx ts-node tests/generate_test_data.ts
+```
+
+This creates binary test files in `tests/test_data/` that can be used to verify compatibility with C++, Python, .NET, Go, and Rust implementations.
+
 ## License
 
 BSD-3-Clause
