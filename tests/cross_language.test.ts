@@ -13,6 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
   ValueType,
+  NullValue,
   BoolValue,
   IntValue,
   LongValue,
@@ -31,6 +32,12 @@ describe('Cross-Language Binary Compatibility', () => {
   });
 
   describe('Type ID Verification', () => {
+    test('NullValue has correct type ID (0)', () => {
+      const val = new NullValue('test');
+      expect(val.getType()).toBe(ValueType.Null);
+      expect(val.getType()).toBe(0);
+    });
+
     test('BoolValue has correct type ID (1)', () => {
       const val = new BoolValue('test', true);
       expect(val.getType()).toBe(ValueType.Bool);
@@ -75,6 +82,26 @@ describe('Cross-Language Binary Compatibility', () => {
   });
 
   describe('Wire Format Verification', () => {
+    test('NullValue serialization format matches spec', () => {
+      const val = new NullValue('test_null');
+      const buffer = val.serialize();
+
+      // Format: [type:1][name_len:4 LE][name:UTF-8][value_size:4 LE=0][no value bytes]
+      expect(buffer.readUInt8(0)).toBe(0); // Type ID for Null
+
+      const nameLen = buffer.readUInt32LE(1);
+      expect(nameLen).toBe(9); // "test_null".length
+
+      const name = buffer.toString('utf-8', 5, 5 + nameLen);
+      expect(name).toBe('test_null');
+
+      const valueSize = buffer.readUInt32LE(5 + nameLen);
+      expect(valueSize).toBe(0); // Null has 0 value bytes
+
+      // Total: 1 (type) + 4 (name_len) + 9 (name) + 4 (value_size) + 0 (value)
+      expect(buffer.length).toBe(18);
+    });
+
     test('BoolValue serialization format matches spec', () => {
       const val = new BoolValue('test', true);
       const buffer = val.serialize();
@@ -227,6 +254,20 @@ describe('Cross-Language Binary Compatibility', () => {
   });
 
   describe('Generated Test Data Files', () => {
+    test('can read back nodejs_null.bin', () => {
+      const filepath = path.join(TEST_DATA_DIR, 'nodejs_null.bin');
+      if (!fs.existsSync(filepath)) {
+        // Skip if file not generated yet
+        return;
+      }
+
+      const buffer = fs.readFileSync(filepath);
+      const { value } = Container.deserializeValue(buffer, 0);
+
+      expect(value.getName()).toBe('null_field');
+      expect((value as NullValue).getValue()).toBeNull();
+    });
+
     test('can read back nodejs_long.bin', () => {
       const filepath = path.join(TEST_DATA_DIR, 'nodejs_long.bin');
       expect(fs.existsSync(filepath)).toBe(true);

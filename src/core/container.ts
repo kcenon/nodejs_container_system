@@ -1,5 +1,6 @@
 import { Value, BaseValue } from './value';
 import { ValueType, ValueNotFoundError, DeserializationError } from './types';
+import { NullValue } from '../values/null_value';
 import {
   BoolValue,
   ShortValue,
@@ -199,6 +200,12 @@ export class Container extends BaseValue {
     let value: Value;
 
     switch (type) {
+      case ValueType.Null: {
+        // Null values have no data bytes (valueSize should be 0)
+        value = new NullValue(name);
+        break;
+      }
+
       case ValueType.Bool: {
         const boolVal = buffer.readUInt8(pos) !== 0;
         value = new BoolValue(name, boolVal);

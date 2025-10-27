@@ -18,7 +18,8 @@ A cross-language compatible container system providing type-safe data serializat
 
 ## Features
 
-- **15 Value Types**: Support for bool, short, ushort, int, uint, float, long (32-bit), ulong (32-bit), llong (64-bit), ullong (64-bit), double, string, bytes, container, and array
+- **16 Value Types**: Support for null, bool, short, ushort, int, uint, float, long (32-bit), ulong (32-bit), llong (64-bit), ullong (64-bit), double, string, bytes, container, and array
+- **Null Value Support**: Explicit null values (type 0) to distinguish between missing fields and fields that are explicitly null
 - **Platform Independence**: Enforced 4-byte serialization for long/ulong types ensures consistent behavior across all platforms
 - **Type Safety**: TypeScript's type system combined with runtime validation prevents type errors
 - **Zero-Copy Deserialization**: Efficient Buffer-based serialization with minimal memory overhead
@@ -110,6 +111,25 @@ console.log(ullongVal.getValue()); // 10000000000n
 ```
 
 ## Value Types
+
+### Null Value
+
+```typescript
+import { NullValue, Container } from '@kcenon/container-system';
+
+// Explicit null value - distinguishes between missing and null
+const nullVal = new NullValue('optional_field');
+console.log(nullVal.getValue()); // null
+
+// Use case: API response with explicitly null field
+const response = new Container('api_response');
+response.add(new NullValue('middle_name')); // Explicitly null
+// last_name is not added (missing)
+
+// Check the difference
+console.log(response.has('middle_name')); // true (present but null)
+console.log(response.has('last_name')); // false (missing)
+```
 
 ### Primitive Types
 

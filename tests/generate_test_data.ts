@@ -9,6 +9,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {
+  NullValue,
   BoolValue,
   ShortValue,
   UShortValue,
@@ -39,6 +40,13 @@ function writeTestFile(filename: string, buffer: Buffer): void {
   const filepath = path.join(OUTPUT_DIR, filename);
   fs.writeFileSync(filepath, buffer);
   console.log(`✓ Generated ${filename} (${buffer.length} bytes)`);
+}
+
+// Type 0: Null Value
+{
+  const value = new NullValue('null_field');
+  writeTestFile('nodejs_null.bin', value.serialize());
+  console.log(`  → Type ID: 0, Value size: 0 bytes`);
 }
 
 // Type 1: Bool Value
