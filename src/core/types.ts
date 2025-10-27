@@ -1,6 +1,9 @@
 /**
  * Value types matching the universal container system specification.
  *
+ * IMPORTANT: These type IDs MUST match the C++ standard (container_system/core/value_types.h)
+ * for cross-language binary compatibility.
+ *
  * Type Policy for Long/ULong (types 6 and 7):
  * - Type 6 (Long): Signed 32-bit integer [-2^31, 2^31-1]
  * - Type 7 (ULong): Unsigned 32-bit integer [0, 2^32-1]
@@ -10,21 +13,22 @@
  * This ensures platform independence and cross-language compatibility.
  */
 export enum ValueType {
-  Bool = 0,
-  Short = 1,
-  UShort = 2,
-  Int = 3,
-  UInt = 4,
-  Float = 5,
-  Long = 6,      // 32-bit signed (NEW: enforces 4-byte range)
-  ULong = 7,     // 32-bit unsigned (NEW: enforces 4-byte range)
-  LLong = 8,     // 64-bit signed (renamed from Long)
-  ULLong = 9,    // 64-bit unsigned (renamed from ULong)
-  Double = 10,
-  String = 11,
+  Null = 0,      // Reserved for null/undefined values (not yet implemented)
+  Bool = 1,
+  Short = 2,
+  UShort = 3,
+  Int = 4,
+  UInt = 5,
+  Long = 6,      // 32-bit signed (enforces 4-byte range)
+  ULong = 7,     // 32-bit unsigned (enforces 4-byte range)
+  LLong = 8,     // 64-bit signed
+  ULLong = 9,    // 64-bit unsigned
+  Float = 10,
+  Double = 11,
   Bytes = 12,
-  Container = 13,
-  Array = 14,
+  String = 13,
+  Container = 14,
+  Array = 15,    // Extension: not in C++ standard yet
 }
 
 /**

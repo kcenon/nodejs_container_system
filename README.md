@@ -2,6 +2,20 @@
 
 A cross-language compatible container system providing type-safe data serialization and interoperability between C++, Python, .NET, Go, Rust, and Node.js/TypeScript.
 
+## ⚠️ Breaking Change Notice (v1.0.1)
+
+**Type ID Mapping Fix**: Version 1.0.1 corrects a critical bug where ValueType IDs did not match the C++ standard, breaking binary compatibility. If you used v1.0.0, you **MUST** update:
+
+- **Old (v1.0.0 - INCORRECT)**: Bool=0, Short=1, UShort=2, ..., Array=14
+- **New (v1.0.1 - CORRECT)**: Null=0, Bool=1, Short=2, UShort=3, ..., Container=14, Array=15
+
+**Action Required**:
+1. Update to v1.0.1 immediately
+2. Re-serialize any data created with v1.0.0
+3. Data serialized with v1.0.0 is **NOT compatible** with v1.0.1 or other languages
+
+**Rationale**: The standard C++ implementation (container_system/core/value_types.h) defines Null as type 0, which was incorrectly omitted in v1.0.0, causing all subsequent type IDs to be off by one.
+
 ## Features
 
 - **15 Value Types**: Support for bool, short, ushort, int, uint, float, long (32-bit), ulong (32-bit), llong (64-bit), ullong (64-bit), double, string, bytes, container, and array

@@ -2,6 +2,15 @@
 
 This document describes the architecture and design decisions of the Node.js/TypeScript container system implementation.
 
+## ⚠️ Breaking Change Notice (v1.0.1)
+
+**Critical Bug Fix**: Version 1.0.0 had incorrect ValueType IDs that broke binary compatibility with other implementations. Version 1.0.1 corrects this by adding the missing `Null` type (ID 0) and shifting all other IDs by +1 to match the C++ standard.
+
+**Impact**:
+- All data serialized with v1.0.0 is **incompatible** with v1.0.1
+- v1.0.1 is now **binary-compatible** with C++, Python, .NET, Go, and Rust
+- ArrayValue is now correctly assigned type ID 15 (extension)
+
 ## Overview
 
 The container system provides a type-safe, cross-language data serialization framework with binary compatibility across C++, Python, .NET, Go, Rust, and Node.js/TypeScript implementations.
@@ -63,27 +72,30 @@ nodejs_container_system/
 
 ## Type System
 
-### ValueType Enum (15 types)
+### ValueType Enum (16 types)
 
 ```typescript
 export enum ValueType {
-  Bool = 0,
-  Short = 1,
-  UShort = 2,
-  Int = 3,
-  UInt = 4,
-  Float = 5,
+  Null = 0,      // Reserved (not yet implemented)
+  Bool = 1,
+  Short = 2,
+  UShort = 3,
+  Int = 4,
+  UInt = 5,
   Long = 6,      // 32-bit signed (enforced)
   ULong = 7,     // 32-bit unsigned (enforced)
   LLong = 8,     // 64-bit signed (BigInt)
   ULLong = 9,    // 64-bit unsigned (BigInt)
-  Double = 10,
-  String = 11,
+  Float = 10,
+  Double = 11,
   Bytes = 12,
-  Container = 13,
-  Array = 14,
+  String = 13,
+  Container = 14,
+  Array = 15,    // Extension: Node.js-specific (not in C++ standard)
 }
 ```
+
+**Note**: ArrayValue (type 15) is a Node.js-specific extension not present in the C++ standard. Other implementations (Python, .NET, Go, Rust) do not have this type yet. If cross-language compatibility is required, use Container with numeric keys instead of Array.
 
 ### Long/ULong Type Policy (Types 6 and 7)
 

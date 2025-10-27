@@ -271,7 +271,7 @@ describe('Value serialization formats', () => {
     const buffer = val.serialize();
 
     // Check type byte
-    expect(buffer.readUInt8(0)).toBe(0); // ValueType.Bool
+    expect(buffer.readUInt8(0)).toBe(1); // ValueType.Bool (now type 1)
 
     // Check name
     const nameLen = buffer.readUInt32LE(1);
@@ -292,7 +292,7 @@ describe('Value serialization formats', () => {
     const val = new StringValue('message', 'hello');
     const buffer = val.serialize();
 
-    expect(buffer.readUInt8(0)).toBe(11); // ValueType.String
+    expect(buffer.readUInt8(0)).toBe(13); // ValueType.String (now type 13)
 
     const nameLen = buffer.readUInt32LE(1);
     const name = buffer.toString('utf-8', 5, 5 + nameLen);
@@ -310,7 +310,7 @@ describe('Value serialization formats', () => {
     const val = new BytesValue('data', bytes);
     const buffer = val.serialize();
 
-    expect(buffer.readUInt8(0)).toBe(12); // ValueType.Bytes
+    expect(buffer.readUInt8(0)).toBe(12); // ValueType.Bytes (still type 12)
 
     const nameLen = buffer.readUInt32LE(1);
     const valueSize = buffer.readUInt32LE(5 + nameLen);
@@ -324,7 +324,7 @@ describe('Value serialization formats', () => {
     const val = new DoubleValue('pi', 3.14159);
     const buffer = val.serialize();
 
-    expect(buffer.readUInt8(0)).toBe(10); // ValueType.Double
+    expect(buffer.readUInt8(0)).toBe(11); // ValueType.Double (now type 11)
 
     const nameLen = buffer.readUInt32LE(1);
     const valueSize = buffer.readUInt32LE(5 + nameLen);

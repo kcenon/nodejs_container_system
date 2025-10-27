@@ -15,7 +15,7 @@ describe('BoolValue', () => {
   test('creates true value', () => {
     const val = new BoolValue('flag', true);
     expect(val.getValue()).toBe(true);
-    expect(val.getType()).toBe(0);
+    expect(val.getType()).toBe(1);  // Bool is now type 1
   });
 
   test('creates false value', () => {
@@ -40,7 +40,7 @@ describe('ShortValue', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.getValue()).toBe(100);
-      expect(result.value.getType()).toBe(1);
+      expect(result.value.getType()).toBe(2);  // Short is now type 2
     }
   });
 
@@ -76,7 +76,7 @@ describe('UShortValue', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.getValue()).toBe(50000);
-      expect(result.value.getType()).toBe(2);
+      expect(result.value.getType()).toBe(3);  // UShort is now type 3
     }
   });
 
@@ -107,7 +107,7 @@ describe('IntValue', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.getValue()).toBe(1000000);
-      expect(result.value.getType()).toBe(3);
+      expect(result.value.getType()).toBe(4);  // Int is now type 4
     }
   });
 
@@ -138,7 +138,7 @@ describe('UIntValue', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.getValue()).toBe(3000000000);
-      expect(result.value.getType()).toBe(4);
+      expect(result.value.getType()).toBe(5);  // UInt is now type 5
     }
   });
 
@@ -167,7 +167,7 @@ describe('FloatValue', () => {
   test('creates float value', () => {
     const val = new FloatValue('f', 3.14);
     expect(val.getValue()).toBeCloseTo(3.14, 5);
-    expect(val.getType()).toBe(5);
+    expect(val.getType()).toBe(10);  // Float is now type 10
   });
 
   test('handles precision loss (float32)', () => {
@@ -181,7 +181,7 @@ describe('DoubleValue', () => {
   test('creates double value', () => {
     const val = new DoubleValue('d', 3.141592653589793);
     expect(val.getValue()).toBe(3.141592653589793);
-    expect(val.getType()).toBe(10);
+    expect(val.getType()).toBe(11);  // Double is now type 11
   });
 
   test('handles very small numbers', () => {

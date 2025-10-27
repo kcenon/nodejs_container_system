@@ -1,6 +1,6 @@
 {
   "name": "@kcenon/container-system",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cross-language compatible container system for Node.js/TypeScript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
