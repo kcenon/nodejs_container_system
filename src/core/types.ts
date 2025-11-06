@@ -76,6 +76,9 @@ export const SafetyLimits = {
 
   // Minimum bytes that must be read per iteration (prevent infinite loops)
   MIN_BYTES_READ: 1,
+
+  // Maximum nesting depth: 100 levels (prevent stack overflow)
+  MAX_NESTING_DEPTH: 100,
 } as const;
 
 /**

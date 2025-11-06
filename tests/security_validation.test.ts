@@ -109,6 +109,12 @@ describe('Security and Input Validation', () => {
       expect(() => ArrayValue.deserialize(buffer)).toThrow('Buffer too short');
     });
 
+    test('rejects buffer too short for deserializeValue header', () => {
+      const buffer = Buffer.alloc(5); // Too short, need at least 9 bytes
+
+      expect(() => Container.deserializeValue(buffer, 0)).toThrow('Buffer too short');
+    });
+
     test('rejects buffer underflow in Container', () => {
       const buffer = Buffer.alloc(20);
       buffer.writeUInt8(14, 0); // Container type
@@ -129,12 +135,50 @@ describe('Security and Input Validation', () => {
       expect(() => ArrayValue.deserialize(buffer)).toThrow('Buffer underflow');
     });
 
-    test('rejects buffer too short for name', () => {
+    test('rejects buffer underflow in deserializeValue', () => {
+      const buffer = Buffer.alloc(20);
+      buffer.writeUInt8(13, 0); // String type
+      buffer.writeUInt32LE(4, 1); // nameLength
+      buffer.write('test', 5);
+      buffer.writeUInt32LE(100, 9); // valueSize = 100, but buffer is only 20 bytes
+
+      expect(() => Container.deserializeValue(buffer, 0)).toThrow('Buffer underflow');
+    });
+
+    test('rejects buffer too short for name in Container', () => {
       const buffer = Buffer.alloc(20);
       buffer.writeUInt8(14, 0); // Container type
       buffer.writeUInt32LE(100, 1); // nameLength = 100, but buffer is only 20 bytes
 
       expect(() => Container.deserialize(buffer)).toThrow('Buffer too short');
+    });
+
+    test('rejects buffer too short for name in deserializeValue', () => {
+      const buffer = Buffer.alloc(20);
+      buffer.writeUInt8(13, 0); // String type
+      buffer.writeUInt32LE(100, 1); // nameLength = 100, but buffer is only 20 bytes
+
+      expect(() => Container.deserializeValue(buffer, 0)).toThrow('Buffer too short');
+    });
+
+    test('rejects name length exceeding maximum in deserializeValue', () => {
+      const buffer = Buffer.alloc(20);
+      buffer.writeUInt8(13, 0); // String type
+      buffer.writeUInt32LE(SafetyLimits.MAX_NAME_LENGTH + 1, 1); // nameLength too large
+
+      expect(() => Container.deserializeValue(buffer, 0)).toThrow('Name length');
+      expect(() => Container.deserializeValue(buffer, 0)).toThrow('exceeds maximum');
+    });
+
+    test('rejects value size exceeding maximum in deserializeValue', () => {
+      const buffer = Buffer.alloc(20);
+      buffer.writeUInt8(13, 0); // String type
+      buffer.writeUInt32LE(4, 1); // nameLength
+      buffer.write('test', 5);
+      buffer.writeUInt32LE(SafetyLimits.MAX_VALUE_SIZE + 1, 9); // valueSize too large
+
+      expect(() => Container.deserializeValue(buffer, 0)).toThrow('Value size');
+      expect(() => Container.deserializeValue(buffer, 0)).toThrow('exceeds maximum');
     });
   });
 
@@ -155,6 +199,77 @@ describe('Security and Input Validation', () => {
       buffer.writeUInt32LE(0xFFFFFFFF, 9); // Malicious: 4GB value size
 
       expect(() => Container.deserialize(buffer)).toThrow();
+    });
+
+    test('prevents stack overflow with deeply nested containers', () => {
+      // Create a deeply nested container exceeding MAX_NESTING_DEPTH
+      let container = new Container('root');
+
+      // Create nested containers up to the limit + 1
+      for (let i = 0; i < SafetyLimits.MAX_NESTING_DEPTH + 2; i++) {
+        const nested = new Container(`level_${i}`);
+        container.add(nested);
+        container = nested;
+      }
+
+      // Serialize the deeply nested structure
+      const outerContainer = new Container('outer');
+      let current = outerContainer;
+      for (let i = 0; i < SafetyLimits.MAX_NESTING_DEPTH + 2; i++) {
+        const nested = new Container(`level_${i}`);
+        current.add(nested);
+        current = nested;
+      }
+
+      const buffer = outerContainer.serialize();
+
+      // Deserialization should throw due to nesting depth exceeded
+      expect(() => Container.deserialize(buffer)).toThrow('Nesting depth');
+      expect(() => Container.deserialize(buffer)).toThrow('exceeds maximum');
+    });
+
+    test('prevents stack overflow with deeply nested arrays', () => {
+      // Create a deeply nested array structure
+      let outerArray = new ArrayValue('root', []);
+
+      for (let i = 0; i < SafetyLimits.MAX_NESTING_DEPTH + 2; i++) {
+        const nested = new ArrayValue(`level_${i}`, []);
+        outerArray.push(nested);
+        outerArray = nested;
+      }
+
+      // Create the full structure
+      const root = new ArrayValue('outer', []);
+      let current = root;
+      for (let i = 0; i < SafetyLimits.MAX_NESTING_DEPTH + 2; i++) {
+        const nested = new ArrayValue(`level_${i}`, []);
+        current.push(nested);
+        current = nested;
+      }
+
+      const buffer = root.serialize();
+
+      // Deserialization should throw due to nesting depth exceeded
+      expect(() => ArrayValue.deserialize(buffer)).toThrow('Nesting depth');
+      expect(() => ArrayValue.deserialize(buffer)).toThrow('exceeds maximum');
+    });
+
+    test('accepts nesting at exactly the maximum depth', () => {
+      // Create nested containers at exactly MAX_NESTING_DEPTH
+      let root = new Container('root');
+      let current = root;
+
+      for (let i = 0; i < SafetyLimits.MAX_NESTING_DEPTH - 1; i++) {
+        const nested = new Container(`level_${i}`);
+        current.add(nested);
+        current = nested;
+      }
+
+      const buffer = root.serialize();
+      const deserialized = Container.deserialize(buffer);
+
+      // Should deserialize successfully
+      expect(deserialized.value.getName()).toBe('root');
     });
   });
 

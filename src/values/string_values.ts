@@ -2,7 +2,7 @@ import { BaseValue } from '../core/value';
 import { ValueType } from '../core/types';
 
 /**
- * String value - UTF-8 encoded string (type 11)
+ * String value - UTF-8 encoded string (type 13)
  */
 export class StringValue extends BaseValue {
   constructor(name: string, private value: string) {

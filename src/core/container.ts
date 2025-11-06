@@ -138,8 +138,22 @@ export class Container extends BaseValue {
 
   /**
    * Deserialize a container from a Buffer
+   * @param buffer The buffer to deserialize from
+   * @param offset The offset to start reading from
+   * @param depth The current nesting depth (used to prevent stack overflow)
    */
-  static deserialize(buffer: Buffer, offset: number = 0): { value: Container; bytesRead: number } {
+  static deserialize(
+    buffer: Buffer,
+    offset: number = 0,
+    depth: number = 0
+  ): { value: Container; bytesRead: number } {
+    // Check nesting depth to prevent stack overflow DoS attacks
+    if (depth > SafetyLimits.MAX_NESTING_DEPTH) {
+      throw new DeserializationError(
+        `Nesting depth ${depth} exceeds maximum ${SafetyLimits.MAX_NESTING_DEPTH}`
+      );
+    }
+
     let pos = offset;
 
     // Validate buffer has minimum required bytes (1 + 4 + 4 = 9 bytes minimum)
@@ -198,7 +212,7 @@ export class Container extends BaseValue {
 
     // Deserialize all nested values
     while (pos < endPos) {
-      const result = Container.deserializeValue(buffer, pos);
+      const result = Container.deserializeValue(buffer, pos, depth + 1);
 
       // Prevent infinite loop: ensure we're making progress
       if (result.bytesRead < SafetyLimits.MIN_BYTES_READ) {
@@ -216,8 +230,22 @@ export class Container extends BaseValue {
 
   /**
    * Deserialize a single value from buffer (handles all types)
+   * @param buffer The buffer to deserialize from
+   * @param offset The offset to start reading from
+   * @param depth The current nesting depth (used to prevent stack overflow)
    */
-  static deserializeValue(buffer: Buffer, offset: number): { value: Value; bytesRead: number } {
+  static deserializeValue(
+    buffer: Buffer,
+    offset: number,
+    depth: number = 0
+  ): { value: Value; bytesRead: number } {
+    // Check nesting depth to prevent stack overflow DoS attacks
+    if (depth > SafetyLimits.MAX_NESTING_DEPTH) {
+      throw new DeserializationError(
+        `Nesting depth ${depth} exceeds maximum ${SafetyLimits.MAX_NESTING_DEPTH}`
+      );
+    }
+
     let pos = offset;
 
     // Validate buffer has minimum required bytes (1 + 4 + 4 = 9 bytes minimum)
@@ -369,16 +397,16 @@ export class Container extends BaseValue {
       }
 
       case ValueType.Container: {
-        // Recursively deserialize nested container
+        // Recursively deserialize nested container with incremented depth
         // Need to re-read from type byte
-        const result = Container.deserialize(buffer, offset);
+        const result = Container.deserialize(buffer, offset, depth);
         value = result.value;
         pos = offset + result.bytesRead;
         return { value, bytesRead: result.bytesRead };
       }
 
       case ValueType.Array: {
-        const result = ArrayValue.deserialize(buffer, offset);
+        const result = ArrayValue.deserialize(buffer, offset, depth);
         value = result.value;
         pos = offset + result.bytesRead;
         return { value, bytesRead: result.bytesRead };
@@ -458,8 +486,22 @@ export class ArrayValue extends BaseValue {
 
   /**
    * Deserialize an array from a Buffer
+   * @param buffer The buffer to deserialize from
+   * @param offset The offset to start reading from
+   * @param depth The current nesting depth (used to prevent stack overflow)
    */
-  static deserialize(buffer: Buffer, offset: number = 0): { value: ArrayValue; bytesRead: number } {
+  static deserialize(
+    buffer: Buffer,
+    offset: number = 0,
+    depth: number = 0
+  ): { value: ArrayValue; bytesRead: number } {
+    // Check nesting depth to prevent stack overflow DoS attacks
+    if (depth > SafetyLimits.MAX_NESTING_DEPTH) {
+      throw new DeserializationError(
+        `Nesting depth ${depth} exceeds maximum ${SafetyLimits.MAX_NESTING_DEPTH}`
+      );
+    }
+
     let pos = offset;
 
     // Validate buffer has minimum required bytes (1 + 4 + 4 = 9 bytes minimum)
@@ -518,7 +560,7 @@ export class ArrayValue extends BaseValue {
 
     // Deserialize all elements
     while (pos < endPos) {
-      const result = Container.deserializeValue(buffer, pos);
+      const result = Container.deserializeValue(buffer, pos, depth + 1);
 
       // Prevent infinite loop: ensure we're making progress
       if (result.bytesRead < SafetyLimits.MIN_BYTES_READ) {
