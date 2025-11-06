@@ -2,7 +2,7 @@ import { BaseValue, Result, Ok, Err } from '../core/value';
 import { ValueType, NumericRanges, InvalidTypeConversionError } from '../core/types';
 
 /**
- * Boolean value (type 0)
+ * Boolean value (type 1)
  */
 export class BoolValue extends BaseValue {
   constructor(name: string, private value: boolean) {
@@ -29,7 +29,7 @@ export class BoolValue extends BaseValue {
 }
 
 /**
- * Short value - signed 16-bit integer (type 1)
+ * Short value - signed 16-bit integer (type 2)
  */
 export class ShortValue extends BaseValue {
   private constructor(name: string, private value: number) {
@@ -72,7 +72,7 @@ export class ShortValue extends BaseValue {
 }
 
 /**
- * Unsigned short value - 16-bit unsigned integer (type 2)
+ * Unsigned short value - 16-bit unsigned integer (type 3)
  */
 export class UShortValue extends BaseValue {
   private constructor(name: string, private value: number) {
@@ -115,7 +115,7 @@ export class UShortValue extends BaseValue {
 }
 
 /**
- * Int value - signed 32-bit integer (type 3)
+ * Int value - signed 32-bit integer (type 4)
  */
 export class IntValue extends BaseValue {
   private constructor(name: string, private value: number) {
@@ -158,7 +158,7 @@ export class IntValue extends BaseValue {
 }
 
 /**
- * Unsigned int value - 32-bit unsigned integer (type 4)
+ * Unsigned int value - 32-bit unsigned integer (type 5)
  */
 export class UIntValue extends BaseValue {
   private constructor(name: string, private value: number) {
@@ -201,7 +201,7 @@ export class UIntValue extends BaseValue {
 }
 
 /**
- * Float value - 32-bit floating point (type 5)
+ * Float value - 32-bit floating point (type 10)
  */
 export class FloatValue extends BaseValue {
   constructor(name: string, private value: number) {
@@ -400,7 +400,7 @@ export class ULLongValue extends BaseValue {
 }
 
 /**
- * Double value - 64-bit floating point (type 10)
+ * Double value - 64-bit floating point (type 11)
  */
 export class DoubleValue extends BaseValue {
   constructor(name: string, private value: number) {

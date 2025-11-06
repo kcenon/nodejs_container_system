@@ -1,5 +1,5 @@
 import { Value, BaseValue } from './value';
-import { ValueType, ValueNotFoundError, DeserializationError } from './types';
+import { ValueType, ValueNotFoundError, DeserializationError, SafetyLimits } from './types';
 import { NullValue } from '../values/null_value';
 import {
   BoolValue,
@@ -138,21 +138,52 @@ export class Container extends BaseValue {
 
   /**
    * Deserialize a container from a Buffer
+   * @param buffer The buffer to deserialize from
+   * @param offset The offset to start reading from
+   * @param depth The current nesting depth (used to prevent stack overflow)
    */
-  static deserialize(buffer: Buffer, offset: number = 0): { value: Container; bytesRead: number } {
+  static deserialize(
+    buffer: Buffer,
+    offset: number = 0,
+    depth: number = 0
+  ): { value: Container; bytesRead: number } {
+    // Check nesting depth to prevent stack overflow DoS attacks
+    if (depth > SafetyLimits.MAX_NESTING_DEPTH) {
+      throw new DeserializationError(
+        `Nesting depth ${depth} exceeds maximum ${SafetyLimits.MAX_NESTING_DEPTH}`
+      );
+    }
+
     let pos = offset;
+
+    // Validate buffer has minimum required bytes (1 + 4 + 4 = 9 bytes minimum)
+    if (offset + 9 > buffer.length) {
+      throw new DeserializationError('Buffer too short for Container header');
+    }
 
     // Read type (1 byte)
     const type = buffer.readUInt8(pos);
     pos += 1;
 
     if (type !== ValueType.Container) {
-      throw new DeserializationError(`Expected Container type (13), got ${type}`);
+      throw new DeserializationError(`Expected Container type (14), got ${type}`);
     }
 
     // Read name length (4 bytes LE)
     const nameLength = buffer.readUInt32LE(pos);
     pos += 4;
+
+    // Validate name length
+    if (nameLength > SafetyLimits.MAX_NAME_LENGTH) {
+      throw new DeserializationError(
+        `Name length ${nameLength} exceeds maximum ${SafetyLimits.MAX_NAME_LENGTH}`
+      );
+    }
+
+    // Validate buffer has enough bytes for name
+    if (pos + nameLength + 4 > buffer.length) {
+      throw new DeserializationError('Buffer too short for Container name and value size');
+    }
 
     // Read name (UTF-8)
     const name = buffer.toString('utf-8', pos, pos + nameLength);
@@ -162,12 +193,34 @@ export class Container extends BaseValue {
     const valueSize = buffer.readUInt32LE(pos);
     pos += 4;
 
+    // Validate value size
+    if (valueSize > SafetyLimits.MAX_VALUE_SIZE) {
+      throw new DeserializationError(
+        `Value size ${valueSize} exceeds maximum ${SafetyLimits.MAX_VALUE_SIZE}`
+      );
+    }
+
+    // Validate buffer has enough bytes for value data
+    if (pos + valueSize > buffer.length) {
+      throw new DeserializationError(
+        `Buffer underflow: need ${valueSize} bytes but only ${buffer.length - pos} available`
+      );
+    }
+
     const container = new Container(name);
     const endPos = pos + valueSize;
 
     // Deserialize all nested values
     while (pos < endPos) {
-      const result = Container.deserializeValue(buffer, pos);
+      const result = Container.deserializeValue(buffer, pos, depth + 1);
+
+      // Prevent infinite loop: ensure we're making progress
+      if (result.bytesRead < SafetyLimits.MIN_BYTES_READ) {
+        throw new DeserializationError(
+          `Invalid deserialization: read ${result.bytesRead} bytes (minimum ${SafetyLimits.MIN_BYTES_READ})`
+        );
+      }
+
       container.add(result.value);
       pos += result.bytesRead;
     }
@@ -177,9 +230,28 @@ export class Container extends BaseValue {
 
   /**
    * Deserialize a single value from buffer (handles all types)
+   * @param buffer The buffer to deserialize from
+   * @param offset The offset to start reading from
+   * @param depth The current nesting depth (used to prevent stack overflow)
    */
-  static deserializeValue(buffer: Buffer, offset: number): { value: Value; bytesRead: number } {
+  static deserializeValue(
+    buffer: Buffer,
+    offset: number,
+    depth: number = 0
+  ): { value: Value; bytesRead: number } {
+    // Check nesting depth to prevent stack overflow DoS attacks
+    if (depth > SafetyLimits.MAX_NESTING_DEPTH) {
+      throw new DeserializationError(
+        `Nesting depth ${depth} exceeds maximum ${SafetyLimits.MAX_NESTING_DEPTH}`
+      );
+    }
+
     let pos = offset;
+
+    // Validate buffer has minimum required bytes (1 + 4 + 4 = 9 bytes minimum)
+    if (offset + 9 > buffer.length) {
+      throw new DeserializationError('Buffer too short for value header');
+    }
 
     // Read type
     const type = buffer.readUInt8(pos) as ValueType;
@@ -189,6 +261,18 @@ export class Container extends BaseValue {
     const nameLength = buffer.readUInt32LE(pos);
     pos += 4;
 
+    // Validate name length
+    if (nameLength > SafetyLimits.MAX_NAME_LENGTH) {
+      throw new DeserializationError(
+        `Name length ${nameLength} exceeds maximum ${SafetyLimits.MAX_NAME_LENGTH}`
+      );
+    }
+
+    // Validate buffer has enough bytes for name
+    if (pos + nameLength + 4 > buffer.length) {
+      throw new DeserializationError('Buffer too short for value name and size');
+    }
+
     // Read name
     const name = buffer.toString('utf-8', pos, pos + nameLength);
     pos += nameLength;
@@ -196,6 +280,20 @@ export class Container extends BaseValue {
     // Read value size
     const valueSize = buffer.readUInt32LE(pos);
     pos += 4;
+
+    // Validate value size
+    if (valueSize > SafetyLimits.MAX_VALUE_SIZE) {
+      throw new DeserializationError(
+        `Value size ${valueSize} exceeds maximum ${SafetyLimits.MAX_VALUE_SIZE}`
+      );
+    }
+
+    // Validate buffer has enough bytes for value data
+    if (pos + valueSize > buffer.length) {
+      throw new DeserializationError(
+        `Buffer underflow: need ${valueSize} bytes but only ${buffer.length - pos} available`
+      );
+    }
 
     let value: Value;
 
@@ -299,16 +397,16 @@ export class Container extends BaseValue {
       }
 
       case ValueType.Container: {
-        // Recursively deserialize nested container
+        // Recursively deserialize nested container with incremented depth
         // Need to re-read from type byte
-        const result = Container.deserialize(buffer, offset);
+        const result = Container.deserialize(buffer, offset, depth);
         value = result.value;
         pos = offset + result.bytesRead;
         return { value, bytesRead: result.bytesRead };
       }
 
       case ValueType.Array: {
-        const result = ArrayValue.deserialize(buffer, offset);
+        const result = ArrayValue.deserialize(buffer, offset, depth);
         value = result.value;
         pos = offset + result.bytesRead;
         return { value, bytesRead: result.bytesRead };
@@ -388,21 +486,52 @@ export class ArrayValue extends BaseValue {
 
   /**
    * Deserialize an array from a Buffer
+   * @param buffer The buffer to deserialize from
+   * @param offset The offset to start reading from
+   * @param depth The current nesting depth (used to prevent stack overflow)
    */
-  static deserialize(buffer: Buffer, offset: number = 0): { value: ArrayValue; bytesRead: number } {
+  static deserialize(
+    buffer: Buffer,
+    offset: number = 0,
+    depth: number = 0
+  ): { value: ArrayValue; bytesRead: number } {
+    // Check nesting depth to prevent stack overflow DoS attacks
+    if (depth > SafetyLimits.MAX_NESTING_DEPTH) {
+      throw new DeserializationError(
+        `Nesting depth ${depth} exceeds maximum ${SafetyLimits.MAX_NESTING_DEPTH}`
+      );
+    }
+
     let pos = offset;
+
+    // Validate buffer has minimum required bytes (1 + 4 + 4 = 9 bytes minimum)
+    if (offset + 9 > buffer.length) {
+      throw new DeserializationError('Buffer too short for Array header');
+    }
 
     // Read type (1 byte)
     const type = buffer.readUInt8(pos);
     pos += 1;
 
     if (type !== ValueType.Array) {
-      throw new DeserializationError(`Expected Array type (14), got ${type}`);
+      throw new DeserializationError(`Expected Array type (15), got ${type}`);
     }
 
     // Read name length (4 bytes LE)
     const nameLength = buffer.readUInt32LE(pos);
     pos += 4;
+
+    // Validate name length
+    if (nameLength > SafetyLimits.MAX_NAME_LENGTH) {
+      throw new DeserializationError(
+        `Name length ${nameLength} exceeds maximum ${SafetyLimits.MAX_NAME_LENGTH}`
+      );
+    }
+
+    // Validate buffer has enough bytes for name
+    if (pos + nameLength + 4 > buffer.length) {
+      throw new DeserializationError('Buffer too short for Array name and value size');
+    }
 
     // Read name (UTF-8)
     const name = buffer.toString('utf-8', pos, pos + nameLength);
@@ -412,12 +541,34 @@ export class ArrayValue extends BaseValue {
     const valueSize = buffer.readUInt32LE(pos);
     pos += 4;
 
+    // Validate value size
+    if (valueSize > SafetyLimits.MAX_VALUE_SIZE) {
+      throw new DeserializationError(
+        `Value size ${valueSize} exceeds maximum ${SafetyLimits.MAX_VALUE_SIZE}`
+      );
+    }
+
+    // Validate buffer has enough bytes for value data
+    if (pos + valueSize > buffer.length) {
+      throw new DeserializationError(
+        `Buffer underflow: need ${valueSize} bytes but only ${buffer.length - pos} available`
+      );
+    }
+
     const values: Value[] = [];
     const endPos = pos + valueSize;
 
     // Deserialize all elements
     while (pos < endPos) {
-      const result = Container.deserializeValue(buffer, pos);
+      const result = Container.deserializeValue(buffer, pos, depth + 1);
+
+      // Prevent infinite loop: ensure we're making progress
+      if (result.bytesRead < SafetyLimits.MIN_BYTES_READ) {
+        throw new DeserializationError(
+          `Invalid deserialization: read ${result.bytesRead} bytes (minimum ${SafetyLimits.MIN_BYTES_READ})`
+        );
+      }
+
       values.push(result.value);
       pos += result.bytesRead;
     }

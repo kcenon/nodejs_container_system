@@ -61,6 +61,27 @@ export const NumericRanges = {
 } as const;
 
 /**
+ * Safety limits for deserialization
+ * These prevent DoS attacks and infinite loops
+ */
+export const SafetyLimits = {
+  // Maximum name length: 64KB (reasonable for most use cases)
+  MAX_NAME_LENGTH: 65536,
+
+  // Maximum value size: 100MB (prevent memory exhaustion)
+  MAX_VALUE_SIZE: 104857600,
+
+  // Maximum buffer size: 1GB (absolute limit)
+  MAX_BUFFER_SIZE: 1073741824,
+
+  // Minimum bytes that must be read per iteration (prevent infinite loops)
+  MIN_BYTES_READ: 1,
+
+  // Maximum nesting depth: 100 levels (prevent stack overflow)
+  MAX_NESTING_DEPTH: 100,
+} as const;
+
+/**
  * Custom error types for container operations
  */
 export class ContainerError extends Error {
