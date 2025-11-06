@@ -197,11 +197,7 @@ describe('ArrayValue', () => {
     expect(intResult1.ok && intResult2.ok && intResult3.ok).toBe(true);
 
     if (intResult1.ok && intResult2.ok && intResult3.ok) {
-      const arr = new ArrayValue('numbers', [
-        intResult1.value,
-        intResult2.value,
-        intResult3.value,
-      ]);
+      const arr = new ArrayValue('numbers', [intResult1.value, intResult2.value, intResult3.value]);
 
       expect(arr.length()).toBe(3);
       expect((arr.at(0) as IntValue).getValue()).toBe(1);

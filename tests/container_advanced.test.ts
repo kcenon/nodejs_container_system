@@ -422,20 +422,22 @@ describe('Container Advanced Tests', () => {
 
       expect(deserialized.value.getAs('llong_type', LLongValue).getValue()).toBe(-9000000000n);
       expect(deserialized.value.getAs('ullong_type', ULLongValue).getValue()).toBe(18000000000n);
-      expect(deserialized.value.getAs('double_type', DoubleValue).getValue()).toBeCloseTo(2.718281828);
+      expect(deserialized.value.getAs('double_type', DoubleValue).getValue()).toBeCloseTo(
+        2.718281828
+      );
     });
 
     test('deserializes String and Bytes types correctly', () => {
       const container = new Container('string_bytes');
       container.add(new StringValue('str', 'Hello, 세계!'));
-      container.add(new BytesValue('bytes', Buffer.from([0xFF, 0x00, 0xAB, 0xCD])));
+      container.add(new BytesValue('bytes', Buffer.from([0xff, 0x00, 0xab, 0xcd])));
 
       const buffer = container.serialize();
       const deserialized = Container.deserialize(buffer);
 
       expect(deserialized.value.getAs('str', StringValue).getValue()).toBe('Hello, 세계!');
       expect(deserialized.value.getAs('bytes', BytesValue).getValue()).toEqual(
-        Buffer.from([0xFF, 0x00, 0xAB, 0xCD])
+        Buffer.from([0xff, 0x00, 0xab, 0xcd])
       );
     });
   });

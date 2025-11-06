@@ -186,7 +186,7 @@ describe('Security and Input Validation', () => {
     test('prevents memory exhaustion with large name length', () => {
       const buffer = Buffer.alloc(20);
       buffer.writeUInt8(14, 0); // Container type
-      buffer.writeUInt32LE(0xFFFFFFFF, 1); // Malicious: 4GB name length
+      buffer.writeUInt32LE(0xffffffff, 1); // Malicious: 4GB name length
 
       expect(() => Container.deserialize(buffer)).toThrow();
     });
@@ -196,7 +196,7 @@ describe('Security and Input Validation', () => {
       buffer.writeUInt8(14, 0); // Container type
       buffer.writeUInt32LE(4, 1); // nameLength
       buffer.write('test', 5);
-      buffer.writeUInt32LE(0xFFFFFFFF, 9); // Malicious: 4GB value size
+      buffer.writeUInt32LE(0xffffffff, 9); // Malicious: 4GB value size
 
       expect(() => Container.deserialize(buffer)).toThrow();
     });

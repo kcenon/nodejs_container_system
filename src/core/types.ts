@@ -13,22 +13,22 @@
  * This ensures platform independence and cross-language compatibility.
  */
 export enum ValueType {
-  Null = 0,      // Reserved for null/undefined values (not yet implemented)
+  Null = 0, // Reserved for null/undefined values (not yet implemented)
   Bool = 1,
   Short = 2,
   UShort = 3,
   Int = 4,
   UInt = 5,
-  Long = 6,      // 32-bit signed (enforces 4-byte range)
-  ULong = 7,     // 32-bit unsigned (enforces 4-byte range)
-  LLong = 8,     // 64-bit signed
-  ULLong = 9,    // 64-bit unsigned
+  Long = 6, // 32-bit signed (enforces 4-byte range)
+  ULong = 7, // 32-bit unsigned (enforces 4-byte range)
+  LLong = 8, // 64-bit signed
+  ULLong = 9, // 64-bit unsigned
   Float = 10,
   Double = 11,
   Bytes = 12,
   String = 13,
   Container = 14,
-  Array = 15,    // Extension: not in C++ standard yet
+  Array = 15, // Extension: not in C++ standard yet
 }
 
 /**
@@ -36,16 +36,16 @@ export enum ValueType {
  */
 export const NumericRanges = {
   // 32-bit ranges (enforced for Long/ULong)
-  LONG_MIN: -2147483648,      // -2^31
-  LONG_MAX: 2147483647,       // 2^31 - 1
+  LONG_MIN: -2147483648, // -2^31
+  LONG_MAX: 2147483647, // 2^31 - 1
   ULONG_MIN: 0,
-  ULONG_MAX: 4294967295,      // 2^32 - 1
+  ULONG_MAX: 4294967295, // 2^32 - 1
 
   // 16-bit ranges
-  SHORT_MIN: -32768,          // -2^15
-  SHORT_MAX: 32767,           // 2^15 - 1
+  SHORT_MIN: -32768, // -2^15
+  SHORT_MAX: 32767, // 2^15 - 1
   USHORT_MIN: 0,
-  USHORT_MAX: 65535,          // 2^16 - 1
+  USHORT_MAX: 65535, // 2^16 - 1
 
   // 32-bit int ranges (same as long, but semantically different type)
   INT_MIN: -2147483648,
@@ -54,8 +54,8 @@ export const NumericRanges = {
   UINT_MAX: 4294967295,
 
   // 64-bit ranges (using BigInt)
-  LLONG_MIN: -9223372036854775808n,  // -2^63
-  LLONG_MAX: 9223372036854775807n,   // 2^63 - 1
+  LLONG_MIN: -9223372036854775808n, // -2^63
+  LLONG_MAX: 9223372036854775807n, // 2^63 - 1
   ULLONG_MIN: 0n,
   ULLONG_MAX: 18446744073709551615n, // 2^64 - 1
 } as const;

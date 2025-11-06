@@ -232,13 +232,7 @@ describe('Long/ULong 32-bit Range Checking', () => {
 
   describe('Round-trip serialization', () => {
     test('LongValue boundary values survive round-trip', () => {
-      const testCases = [
-        NumericRanges.LONG_MIN,
-        NumericRanges.LONG_MAX,
-        0,
-        1000000,
-        -1000000,
-      ];
+      const testCases = [NumericRanges.LONG_MIN, NumericRanges.LONG_MAX, 0, 1000000, -1000000];
 
       for (const testValue of testCases) {
         const result = LongValue.create('test', testValue);
@@ -252,12 +246,7 @@ describe('Long/ULong 32-bit Range Checking', () => {
     });
 
     test('ULongValue boundary values survive round-trip', () => {
-      const testCases = [
-        NumericRanges.ULONG_MIN,
-        NumericRanges.ULONG_MAX,
-        1000000,
-        3000000000,
-      ];
+      const testCases = [NumericRanges.ULONG_MIN, NumericRanges.ULONG_MAX, 1000000, 3000000000];
 
       for (const testValue of testCases) {
         const result = ULongValue.create('test', testValue);
@@ -277,9 +266,7 @@ describe('Long/ULong 32-bit Range Checking', () => {
       if (!result.ok) {
         const msg = result.error.message;
         expect(msg).toContain('5000000000');
-        expect(
-          msg.includes('32-bit') || msg.includes('type 6') || msg.includes('long')
-        ).toBe(true);
+        expect(msg.includes('32-bit') || msg.includes('type 6') || msg.includes('long')).toBe(true);
       }
     });
 
@@ -289,9 +276,9 @@ describe('Long/ULong 32-bit Range Checking', () => {
       if (!result.ok) {
         const msg = result.error.message;
         expect(msg).toContain('10000000000');
-        expect(
-          msg.includes('32-bit') || msg.includes('type 7') || msg.includes('ulong')
-        ).toBe(true);
+        expect(msg.includes('32-bit') || msg.includes('type 7') || msg.includes('ulong')).toBe(
+          true
+        );
       }
     });
   });

@@ -5,7 +5,10 @@ import { ValueType, NumericRanges, InvalidTypeConversionError } from '../core/ty
  * Boolean value (type 1)
  */
 export class BoolValue extends BaseValue {
-  constructor(name: string, private value: boolean) {
+  constructor(
+    name: string,
+    private value: boolean
+  ) {
     super(name);
   }
 
@@ -32,7 +35,10 @@ export class BoolValue extends BaseValue {
  * Short value - signed 16-bit integer (type 2)
  */
 export class ShortValue extends BaseValue {
-  private constructor(name: string, private value: number) {
+  private constructor(
+    name: string,
+    private value: number
+  ) {
     super(name);
   }
 
@@ -75,7 +81,10 @@ export class ShortValue extends BaseValue {
  * Unsigned short value - 16-bit unsigned integer (type 3)
  */
 export class UShortValue extends BaseValue {
-  private constructor(name: string, private value: number) {
+  private constructor(
+    name: string,
+    private value: number
+  ) {
     super(name);
   }
 
@@ -118,7 +127,10 @@ export class UShortValue extends BaseValue {
  * Int value - signed 32-bit integer (type 4)
  */
 export class IntValue extends BaseValue {
-  private constructor(name: string, private value: number) {
+  private constructor(
+    name: string,
+    private value: number
+  ) {
     super(name);
   }
 
@@ -161,7 +173,10 @@ export class IntValue extends BaseValue {
  * Unsigned int value - 32-bit unsigned integer (type 5)
  */
 export class UIntValue extends BaseValue {
-  private constructor(name: string, private value: number) {
+  private constructor(
+    name: string,
+    private value: number
+  ) {
     super(name);
   }
 
@@ -204,7 +219,10 @@ export class UIntValue extends BaseValue {
  * Float value - 32-bit floating point (type 10)
  */
 export class FloatValue extends BaseValue {
-  constructor(name: string, private value: number) {
+  constructor(
+    name: string,
+    private value: number
+  ) {
     super(name);
   }
 
@@ -236,7 +254,10 @@ export class FloatValue extends BaseValue {
  * For full 64-bit signed integers, use LLongValue (type 8).
  */
 export class LongValue extends BaseValue {
-  private constructor(name: string, private value: number) {
+  private constructor(
+    name: string,
+    private value: number
+  ) {
     super(name);
   }
 
@@ -285,7 +306,10 @@ export class LongValue extends BaseValue {
  * For full 64-bit unsigned integers, use ULLongValue (type 9).
  */
 export class ULongValue extends BaseValue {
-  private constructor(name: string, private value: number) {
+  private constructor(
+    name: string,
+    private value: number
+  ) {
     super(name);
   }
 
@@ -332,7 +356,10 @@ export class ULongValue extends BaseValue {
  * This is the renamed type that was previously called "LongValue" in older versions.
  */
 export class LLongValue extends BaseValue {
-  constructor(name: string, private value: bigint) {
+  constructor(
+    name: string,
+    private value: bigint
+  ) {
     super(name);
     if (value < NumericRanges.LLONG_MIN || value > NumericRanges.LLONG_MAX) {
       throw new InvalidTypeConversionError(
@@ -369,7 +396,10 @@ export class LLongValue extends BaseValue {
  * This is the renamed type that was previously called "ULongValue" in older versions.
  */
 export class ULLongValue extends BaseValue {
-  constructor(name: string, private value: bigint) {
+  constructor(
+    name: string,
+    private value: bigint
+  ) {
     super(name);
     if (value < NumericRanges.ULLONG_MIN || value > NumericRanges.ULLONG_MAX) {
       throw new InvalidTypeConversionError(
@@ -403,7 +433,10 @@ export class ULLongValue extends BaseValue {
  * Double value - 64-bit floating point (type 11)
  */
 export class DoubleValue extends BaseValue {
-  constructor(name: string, private value: number) {
+  constructor(
+    name: string,
+    private value: number
+  ) {
     super(name);
   }
 
