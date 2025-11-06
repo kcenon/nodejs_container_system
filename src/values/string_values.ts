@@ -5,7 +5,10 @@ import { ValueType } from '../core/types';
  * String value - UTF-8 encoded string (type 13)
  */
 export class StringValue extends BaseValue {
-  constructor(name: string, private value: string) {
+  constructor(
+    name: string,
+    private value: string
+  ) {
     super(name);
   }
 
@@ -31,7 +34,10 @@ export class StringValue extends BaseValue {
  * Bytes value - Raw binary data (type 12)
  */
 export class BytesValue extends BaseValue {
-  constructor(name: string, private value: Buffer) {
+  constructor(
+    name: string,
+    private value: Buffer
+  ) {
     super(name);
   }
 

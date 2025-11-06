@@ -425,7 +425,10 @@ export class Container extends BaseValue {
  * Array value - holds a collection of same-typed values (type 14)
  */
 export class ArrayValue extends BaseValue {
-  constructor(name: string, private values: Value[]) {
+  constructor(
+    name: string,
+    private values: Value[]
+  ) {
     super(name);
   }
 
