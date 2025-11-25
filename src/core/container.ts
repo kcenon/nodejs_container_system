@@ -17,7 +17,7 @@ import {
 import { StringValue, BytesValue } from '../values/string_values';
 
 /**
- * Container value - holds a collection of named values (type 13)
+ * Container value - holds a collection of named values (type 14)
  *
  * Supports nested containers and arrays for complex data structures.
  */
@@ -422,7 +422,7 @@ export class Container extends BaseValue {
 }
 
 /**
- * Array value - holds a collection of same-typed values (type 14)
+ * Array value - holds a collection of values (type 15)
  */
 export class ArrayValue extends BaseValue {
   constructor(

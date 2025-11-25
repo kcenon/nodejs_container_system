@@ -25,10 +25,10 @@ export enum ValueType {
   ULLong = 9, // 64-bit unsigned
   Float = 10,
   Double = 11,
-  Bytes = 12,
-  String = 13,
+  String = 12, // Matches C++ string_value position
+  Bytes = 13, // Matches C++ bytes_value position
   Container = 14,
-  Array = 15, // Extension: not in C++ standard yet
+  Array = 15,
 }
 
 /**

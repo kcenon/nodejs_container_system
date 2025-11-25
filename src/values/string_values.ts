@@ -2,7 +2,8 @@ import { BaseValue } from '../core/value';
 import { ValueType } from '../core/types';
 
 /**
- * String value - UTF-8 encoded string (type 13)
+ * String value - UTF-8 encoded string (type 12)
+ * Matches C++ string_value position in value_variant
  */
 export class StringValue extends BaseValue {
   constructor(
@@ -31,7 +32,8 @@ export class StringValue extends BaseValue {
 }
 
 /**
- * Bytes value - Raw binary data (type 12)
+ * Bytes value - Raw binary data (type 13)
+ * Matches C++ bytes_value position in value_variant
  */
 export class BytesValue extends BaseValue {
   constructor(

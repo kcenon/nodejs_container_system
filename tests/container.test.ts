@@ -288,7 +288,7 @@ describe('Value serialization formats', () => {
     const val = new StringValue('message', 'hello');
     const buffer = val.serialize();
 
-    expect(buffer.readUInt8(0)).toBe(13); // ValueType.String (now type 13)
+    expect(buffer.readUInt8(0)).toBe(12); // ValueType.String (type 12, matches C++ string_value)
 
     const nameLen = buffer.readUInt32LE(1);
     const name = buffer.toString('utf-8', 5, 5 + nameLen);
@@ -306,7 +306,7 @@ describe('Value serialization formats', () => {
     const val = new BytesValue('data', bytes);
     const buffer = val.serialize();
 
-    expect(buffer.readUInt8(0)).toBe(12); // ValueType.Bytes (still type 12)
+    expect(buffer.readUInt8(0)).toBe(13); // ValueType.Bytes (type 13, matches C++ bytes_value)
 
     const nameLen = buffer.readUInt32LE(1);
     const valueSize = buffer.readUInt32LE(5 + nameLen);
