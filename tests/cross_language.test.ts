@@ -68,10 +68,10 @@ describe('Cross-Language Binary Compatibility', () => {
       expect(val.getType()).toBe(8);
     });
 
-    test('StringValue has correct type ID (13)', () => {
+    test('StringValue has correct type ID (12)', () => {
       const val = new StringValue('test', 'hello');
       expect(val.getType()).toBe(ValueType.String);
-      expect(val.getType()).toBe(13);
+      expect(val.getType()).toBe(12);
     });
 
     test('Container has correct type ID (14)', () => {
@@ -176,7 +176,7 @@ describe('Cross-Language Binary Compatibility', () => {
       const val = new StringValue('name', 'Hello');
       const buffer = val.serialize();
 
-      expect(buffer.readUInt8(0)).toBe(13); // Type ID for String
+      expect(buffer.readUInt8(0)).toBe(12); // Type ID for String (matches C++ string_value)
 
       const nameLen = buffer.readUInt32LE(1);
       const name = buffer.toString('utf-8', 5, 5 + nameLen);
@@ -366,10 +366,10 @@ describe('Cross-Language Binary Compatibility', () => {
       expect(ValueType.ULLong).toBe(9); // 64-bit
       expect(ValueType.Float).toBe(10);
       expect(ValueType.Double).toBe(11);
-      expect(ValueType.Bytes).toBe(12);
-      expect(ValueType.String).toBe(13);
+      expect(ValueType.String).toBe(12); // Matches C++ string_value position
+      expect(ValueType.Bytes).toBe(13); // Matches C++ bytes_value position
       expect(ValueType.Container).toBe(14);
-      expect(ValueType.Array).toBe(15); // Node.js extension
+      expect(ValueType.Array).toBe(15);
     });
 
     test('Wire format byte order is little-endian', () => {
