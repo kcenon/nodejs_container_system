@@ -1,5 +1,7 @@
-import { ValueStore, BINARY_VERSION } from '../src/core/value_store';
+import { ValueStore, BINARY_VERSION, ValueFactory } from '../src/core/value_store';
 import { IntValue, StringValue, BoolValue, DoubleValue } from '../src/values';
+import { ValueType, DeserializationError } from '../src/core/types';
+import { Value } from '../src/core/value';
 
 describe('ValueStore', () => {
   describe('Basic Operations', () => {
@@ -309,6 +311,132 @@ describe('ValueStore', () => {
       expect(store.get('str')?.getValue()).toBe('hello');
       expect(store.get('bool')?.getValue()).toBe(true);
       expect(store.get('double')?.getValue()).toBeCloseTo(3.14);
+    });
+  });
+
+  describe('Binary Deserialization', () => {
+    // Simple factory for IntValue only
+    const intFactory: ValueFactory = (name: string, type: ValueType, data: Buffer): Value | null => {
+      if (type === ValueType.Int && data.length >= 4) {
+        // Skip header (type + name_len + name + value_len) and read int value
+        // The data is the full serialized value, parse it
+        let offset = 0;
+        // Type byte
+        offset += 1;
+        // Name length
+        const nameLen = data.readUInt32LE(offset);
+        offset += 4;
+        // Name
+        offset += nameLen;
+        // Value size
+        offset += 4;
+        // Value data (4 bytes for int)
+        if (offset + 4 <= data.length) {
+          const intValue = data.readInt32LE(offset);
+          const result = IntValue.create(name, intValue);
+          return result.ok ? result.value : null;
+        }
+      }
+      return null;
+    };
+
+    test('deserializes binary data back to ValueStore', () => {
+      const store = new ValueStore();
+      const val1 = IntValue.create('count', 42);
+      const val2 = IntValue.create('total', 100);
+
+      if (!val1.ok || !val2.ok) return;
+
+      store.add('count', val1.value);
+      store.add('total', val2.value);
+
+      const binary = store.serializeBinary();
+      const restored = ValueStore.deserializeBinary(binary, intFactory);
+
+      expect(restored.size()).toBe(2);
+      expect(restored.contains('count')).toBe(true);
+      expect(restored.contains('total')).toBe(true);
+    });
+
+    test('throws on invalid data (too small)', () => {
+      const tooSmall = Buffer.from([1, 0]); // Less than 5 bytes
+
+      expect(() => {
+        ValueStore.deserializeBinary(tooSmall, intFactory);
+      }).toThrow(DeserializationError);
+    });
+
+    test('throws on unsupported version', () => {
+      const wrongVersion = Buffer.alloc(5);
+      wrongVersion.writeUInt8(99, 0); // Invalid version
+      wrongVersion.writeUInt32LE(0, 1); // Count = 0
+
+      expect(() => {
+        ValueStore.deserializeBinary(wrongVersion, intFactory);
+      }).toThrow('Unsupported binary version');
+    });
+
+    test('throws on truncated entry data', () => {
+      const truncated = Buffer.alloc(10);
+      truncated.writeUInt8(BINARY_VERSION, 0);
+      truncated.writeUInt32LE(1, 1); // 1 entry
+      truncated.writeUInt32LE(100, 5); // Key length = 100 (but buffer is too small)
+
+      expect(() => {
+        ValueStore.deserializeBinary(truncated, intFactory);
+      }).toThrow(DeserializationError);
+    });
+
+    test('throws on truncated key data', () => {
+      const truncated = Buffer.alloc(12);
+      truncated.writeUInt8(BINARY_VERSION, 0);
+      truncated.writeUInt32LE(1, 1); // 1 entry
+      truncated.writeUInt32LE(3, 5); // Key length = 3
+      truncated.write('key', 9); // Key data, but missing type and value
+
+      expect(() => {
+        ValueStore.deserializeBinary(truncated, intFactory);
+      }).toThrow(DeserializationError);
+    });
+
+    test('throws on truncated value data', () => {
+      const truncated = Buffer.alloc(20);
+      let offset = 0;
+      truncated.writeUInt8(BINARY_VERSION, offset); offset += 1;
+      truncated.writeUInt32LE(1, offset); offset += 4; // 1 entry
+      truncated.writeUInt32LE(3, offset); offset += 4; // Key length = 3
+      truncated.write('key', offset); offset += 3;
+      truncated.writeUInt8(ValueType.Int, offset); offset += 1;
+      truncated.writeUInt32LE(100, offset); // Value length = 100 (too large)
+
+      expect(() => {
+        ValueStore.deserializeBinary(truncated, intFactory);
+      }).toThrow(DeserializationError);
+    });
+
+    test('handles factory returning null', () => {
+      const nullFactory: ValueFactory = () => null;
+
+      const store = new ValueStore();
+      const val = IntValue.create('test', 42);
+      if (!val.ok) return;
+
+      store.add('test', val.value);
+
+      const binary = store.serializeBinary();
+      const restored = ValueStore.deserializeBinary(binary, nullFactory);
+
+      // Should have 0 values since factory returns null
+      expect(restored.size()).toBe(0);
+    });
+
+    test('deserializes empty store', () => {
+      const emptyStore = new ValueStore();
+      const binary = emptyStore.serializeBinary();
+
+      const restored = ValueStore.deserializeBinary(binary, intFactory);
+      expect(restored.size()).toBe(0);
+      expect(restored.isEmpty()).toBe(true);
     });
   });
 });
