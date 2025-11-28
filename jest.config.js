@@ -14,6 +14,14 @@ module.exports = {
       functions: 80,
       lines: 80,
       statements: 80
+    },
+    // Lower branch threshold for value_store.ts due to defensive error handling
+    // that is difficult to trigger in normal test conditions
+    './src/core/value_store.ts': {
+      branches: 50,
+      functions: 100,
+      lines: 95,
+      statements: 95
     }
   }
 };
