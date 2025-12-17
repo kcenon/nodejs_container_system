@@ -2,8 +2,8 @@
 
 > **Language:** **English** | [한국어](../README_KO.md)
 
-**Version:** 1.1.0
-**Last Updated:** 2025-11-26
+**Version:** 1.2.0
+**Last Updated:** 2025-12-17
 **Status:** Production Ready
 
 Welcome to the nodejs_container_system documentation! A cross-language compatible container system providing type-safe data serialization and interoperability between C++, Python, .NET, Go, Rust, and Node.js/TypeScript.
@@ -18,6 +18,8 @@ Welcome to the nodejs_container_system documentation! A cross-language compatibl
 | 📚 API documentation | [API Reference](API_REFERENCE.md) |
 | 🏗️ Understand the architecture | [Architecture](ARCHITECTURE.md) |
 | 📁 Project structure | [Project Structure](PROJECT_STRUCTURE.md) |
+| 📨 Build message containers | [Features - ContainerBuilder](FEATURES.md#containerbuilder-fluent-api) |
+| 🔌 Use dependency injection | [API Reference - DI](API_REFERENCE.md#dependency-injection) |
 | ❓ Find answers to common questions | [FAQ](guides/FAQ.md) |
 | 🐛 Troubleshoot issues | [Troubleshooting](guides/TROUBLESHOOTING.md) |
 | 🧪 Learn about testing | [Testing Strategy](contributing/TESTING.md) |
@@ -62,7 +64,7 @@ Welcome to the nodejs_container_system documentation! A cross-language compatibl
 ## Project Information
 
 ### Current Status
-- **Version**: 1.1.0
+- **Version**: 1.2.0
 - **Node.js**: >=16.0.0
 - **TypeScript**: ^5.0.0
 - **License**: BSD-3-Clause
@@ -75,6 +77,9 @@ Welcome to the nodejs_container_system documentation! A cross-language compatibl
 - ✅ **Null Support** - Explicit null values
 - ✅ **Platform Independent** - 32-bit long/ulong enforcement
 - ✅ **Nested Structures** - Containers and arrays
+- ✅ **ContainerBuilder** - Fluent API for message construction
+- ✅ **DI Support** - NestJS and InversifyJS integration
+- ✅ **Wire Protocol** - C++ compatible text-based messaging
 
 ### Installation
 
@@ -106,6 +111,8 @@ const result = Container.deserialize(buffer);
 console.log(result.value.get('name').getValue()); // "John Doe"
 ```
 
+> **Tip**: For messaging scenarios, use `ContainerBuilder` for fluent API and standardized headers. See [ContainerBuilder](FEATURES.md#containerbuilder-fluent-api).
+
 ---
 
 ## 📞 Getting Help
@@ -127,5 +134,5 @@ This is part of the container_systems family:
 
 ---
 
-**Last Updated**: 2025-11-26
+**Last Updated**: 2025-12-17
 **Author**: kcenon <kcenon@naver.com>
