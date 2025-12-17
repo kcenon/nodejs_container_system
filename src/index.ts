@@ -6,3 +6,6 @@ export * from './values';
 
 // Messaging utilities
 export * from './messaging';
+
+// Dependency Injection support
+export * from './di';
