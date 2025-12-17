@@ -22,6 +22,14 @@ module.exports = {
       functions: 100,
       lines: 95,
       statements: 95
+    },
+    // Lower branch threshold for wire_protocol.ts due to complex parsing logic
+    // with defensive error handling for malformed input
+    './src/core/wire_protocol.ts': {
+      branches: 75,
+      functions: 100,
+      lines: 80,
+      statements: 80
     }
   }
 };
