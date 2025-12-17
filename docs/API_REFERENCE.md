@@ -13,8 +13,9 @@
 5. [ArrayValue](#arrayvalue)
 6. [Error Handling](#error-handling)
 7. [Serialization](#serialization)
-8. [Type Guards](#type-guards)
-9. [Examples](#examples)
+8. [C++ Wire Protocol](#c-wire-protocol)
+9. [Type Guards](#type-guards)
+10. [Examples](#examples)
 
 ---
 
@@ -932,6 +933,132 @@ const container = result.value;
 const name = container.getAs('name', StringValue);
 console.log('Name:', name.getValue());
 ```
+
+---
+
+## C++ Wire Protocol
+
+The wire protocol module provides text-based serialization compatible with C++ messaging systems.
+
+### serializeCppWire()
+
+```typescript
+function serializeCppWire(
+  container: Container,
+  header?: Partial<WireProtocolHeader>
+): string
+```
+
+Serializes a container to C++ wire format string.
+
+**Parameters:**
+- `container` - The container to serialize
+- `header` - Optional header fields for messaging context
+
+**Returns:** Wire format string
+
+**Example:**
+```typescript
+import { serializeCppWire, Container, StringValue } from '@kcenon/container-system';
+
+const container = new Container('data');
+container.add(new StringValue('message', 'Hello'));
+
+// Simple serialization
+const wire = serializeCppWire(container);
+// @header{{[5,data_container];[6,1.0];}};@data{{[message,string_value,Hello];}};
+
+// With messaging header
+const wireWithHeader = serializeCppWire(container, {
+  targetId: 'server',
+  sourceId: 'client',
+  messageType: 'request',
+  version: '2.0'
+});
+```
+
+### deserializeCppWire()
+
+```typescript
+function deserializeCppWire(wireString: string): WireProtocolMessage
+```
+
+Deserializes a C++ wire format string to a container with header.
+
+**Parameters:**
+- `wireString` - The wire format string to deserialize
+
+**Returns:** `WireProtocolMessage` containing header and data
+
+**Example:**
+```typescript
+import { deserializeCppWire } from '@kcenon/container-system';
+
+const wire = '@header{{[5,data_container];[6,1.0];}};@data{{[name,string_value,Alice];}};';
+const message = deserializeCppWire(wire);
+
+console.log(message.header.messageType); // 'data_container'
+console.log(message.data.get('name').getValue()); // 'Alice'
+```
+
+### WireProtocolHeader Interface
+
+```typescript
+interface WireProtocolHeader {
+  targetId?: string;
+  targetSubId?: string;
+  sourceId?: string;
+  sourceSubId?: string;
+  messageType: string;
+  version?: string;
+}
+```
+
+### WireProtocolMessage Interface
+
+```typescript
+interface WireProtocolMessage {
+  header: WireProtocolHeader;
+  data: Container;
+}
+```
+
+### HeaderFieldId Constants
+
+```typescript
+const HeaderFieldId = {
+  TARGET_ID: 1,
+  TARGET_SUB_ID: 2,
+  SOURCE_ID: 3,
+  SOURCE_SUB_ID: 4,
+  MESSAGE_TYPE: 5,
+  MESSAGE_VERSION: 6,
+} as const;
+```
+
+### isCppWireFormat()
+
+```typescript
+function isCppWireFormat(data: string): boolean
+```
+
+Checks if a string appears to be in C++ wire format.
+
+**Example:**
+```typescript
+import { isCppWireFormat } from '@kcenon/container-system';
+
+isCppWireFormat('@header{{...}};@data{{...}};'); // true
+isCppWireFormat('{"json": true}'); // false
+```
+
+### serializeContainerDataOnly()
+
+```typescript
+function serializeContainerDataOnly(container: Container): string
+```
+
+Serializes only the data section without header wrapper.
 
 ---
 

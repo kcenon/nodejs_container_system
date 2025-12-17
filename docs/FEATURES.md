@@ -601,6 +601,60 @@ std::cout << "Balance: " << balance->get() << "\n";
 | `string` | `std::string` | `str` | `string` | `string` | `String` |
 | `Buffer` | `std::vector<uint8_t>` | `bytes` | `byte[]` | `[]byte` | `Vec<u8>` |
 
+### C++ Wire Protocol
+
+The system includes a text-based wire protocol compatible with C++ messaging systems:
+
+```typescript
+import {
+  serializeCppWire,
+  deserializeCppWire,
+  Container,
+  StringValue,
+  IntValue
+} from '@kcenon/container-system';
+
+// Create and serialize container
+const container = new Container('request');
+container.add(new StringValue('action', 'get_user'));
+const idResult = IntValue.create('user_id', 12345);
+if (idResult.ok) {
+  container.add(idResult.value);
+}
+
+// Serialize with messaging header
+const wireString = serializeCppWire(container, {
+  targetId: 'user_service',
+  sourceId: 'web_client',
+  messageType: 'rpc_request',
+  version: '1.0'
+});
+
+// Wire format:
+// @header{{[1,user_service];[3,web_client];[5,rpc_request];[6,1.0];}};
+// @data{{[action,string_value,get_user];[user_id,int_value,12345];}};
+
+// Deserialize from C++ system
+const message = deserializeCppWire(wireString);
+console.log(message.header.targetId);    // 'user_service'
+console.log(message.header.messageType); // 'rpc_request'
+console.log(message.data.get('action').getValue()); // 'get_user'
+```
+
+**Wire Format Structure:**
+```
+@header{{[1,target_id];[2,target_sub_id];[3,source_id];[4,source_sub_id];[5,message_type];[6,version];}};
+@data{{[name,type_name,data];[name,type_name,data];...}};
+```
+
+**Supported Type Names:**
+- `null_value`, `bool_value`
+- `short_value`, `ushort_value`, `int_value`, `uint_value`
+- `long_value`, `ulong_value`, `llong_value`, `ullong_value`
+- `float_value`, `double_value`
+- `string_value`, `bytes_value`
+- `container_value`, `array_value`
+
 ## See Also
 
 - [API_REFERENCE.md](API_REFERENCE.md) - Complete API documentation
