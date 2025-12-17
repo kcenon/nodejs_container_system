@@ -274,6 +274,46 @@ console.log(name.getValue()); // "test"
 container.getAs('name', BoolValue); // Error!
 ```
 
+## C++ Wire Protocol
+
+For cross-language messaging with C++ systems, use the text-based wire protocol:
+
+```typescript
+import {
+  Container,
+  StringValue,
+  IntValue,
+  serializeCppWire,
+  deserializeCppWire
+} from '@kcenon/container-system';
+
+// Serialize to C++ wire format
+const container = new Container('user');
+container.add(new StringValue('name', 'Alice'));
+const ageResult = IntValue.create('age', 30);
+if (ageResult.ok) {
+  container.add(ageResult.value);
+}
+
+const wireString = serializeCppWire(container);
+// Output: @header{{[5,data_container];[6,1.0];}};@data{{[name,string_value,Alice];[age,int_value,30];}};
+
+// Deserialize from C++ wire format
+const message = deserializeCppWire(wireString);
+console.log(message.header.messageType); // 'data_container'
+console.log(message.data.get('name').getValue()); // 'Alice'
+
+// With messaging header
+const wireWithHeader = serializeCppWire(container, {
+  targetId: 'server1',
+  sourceId: 'client1',
+  messageType: 'request',
+  version: '2.0'
+});
+```
+
+The wire format is compatible with the C++ container_system messaging layer.
+
 ## Testing
 
 ```bash
