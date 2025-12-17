@@ -1,7 +1,7 @@
 # Container System Features (Node.js/TypeScript)
 
-**Last Updated**: 2025-11-26
-**Version**: 1.1.0
+**Last Updated**: 2025-12-17
+**Version**: 1.2.0
 
 ## Overview
 
@@ -655,6 +655,324 @@ console.log(message.data.get('action').getValue()); // 'get_user'
 - `string_value`, `bytes_value`
 - `container_value`, `array_value`
 
+## ContainerBuilder (Fluent API)
+
+The ContainerBuilder provides a fluent API for constructing containers with standardized message headers.
+
+### Overview
+
+The builder pattern simplifies container construction for messaging scenarios:
+- Fluent method chaining for clean, readable code
+- Standardized header fields for source/target routing
+- Message type and version metadata
+- Compatible with C++ wire protocol headers
+
+### API Methods
+
+| Method | Description |
+|--------|-------------|
+| `setSource(sourceId, sourceSubId?)` | Set the source identifier |
+| `setTarget(targetId, targetSubId?)` | Set the target identifier |
+| `setMessageType(type)` | Set the message type (e.g., 'user.create') |
+| `setMessageVersion(version)` | Set the message version (e.g., '1.0') |
+| `addValue(value)` | Add a single value to the container |
+| `addValues(...values)` | Add multiple values at once |
+| `getHeader()` | Get current header configuration |
+| `reset()` | Clear all headers and values |
+| `build()` | Create the final Container |
+
+### Header Fields
+
+Standard header field names used by ContainerBuilder:
+
+| Field | Constant | Description |
+|-------|----------|-------------|
+| `__source_id` | `HeaderFields.SOURCE_ID` | Source identifier |
+| `__source_sub_id` | `HeaderFields.SOURCE_SUB_ID` | Source sub-identifier (e.g., session) |
+| `__target_id` | `HeaderFields.TARGET_ID` | Target identifier |
+| `__target_sub_id` | `HeaderFields.TARGET_SUB_ID` | Target sub-identifier |
+| `__message_type` | `HeaderFields.MESSAGE_TYPE` | Message type |
+| `__message_version` | `HeaderFields.MESSAGE_VERSION` | Message version |
+
+### Basic Usage
+
+```typescript
+import {
+  ContainerBuilder,
+  StringValue,
+  IntValue,
+  MessageHeaderUtils
+} from '@kcenon/container-system';
+
+// Create a message container with fluent API
+const container = new ContainerBuilder('request')
+  .setSource('client-1', 'session-abc')
+  .setTarget('server-1')
+  .setMessageType('user.create')
+  .setMessageVersion('1.0')
+  .addValue(new StringValue('username', 'alice'))
+  .addValue(IntValue.create('age', 25).value!)
+  .build();
+
+// Extract headers from container
+const header = MessageHeaderUtils.extractHeader(container);
+console.log(header.sourceId);     // 'client-1'
+console.log(header.sourceSubId);  // 'session-abc'
+console.log(header.messageType);  // 'user.create'
+```
+
+### Messaging Scenario
+
+```typescript
+// Request message
+const request = new ContainerBuilder('api_request')
+  .setSource('web-client', 'user-12345')
+  .setTarget('api-gateway')
+  .setMessageType('user.get_profile')
+  .setMessageVersion('2.0')
+  .addValue(new StringValue('user_id', 'u-98765'))
+  .build();
+
+// Response message
+const response = new ContainerBuilder('api_response')
+  .setSource('api-gateway')
+  .setTarget('web-client', 'user-12345')
+  .setMessageType('user.profile')
+  .addValues(
+    new StringValue('name', 'Alice Smith'),
+    new StringValue('email', 'alice@example.com'),
+    IntValue.create('age', 30).value!
+  )
+  .build();
+```
+
+### RPC Pattern
+
+```typescript
+// Create RPC request
+const rpcRequest = new ContainerBuilder('rpc')
+  .setSource('service-a')
+  .setTarget('service-b')
+  .setMessageType('calculate.sum')
+  .addValues(
+    IntValue.create('a', 10).value!,
+    IntValue.create('b', 20).value!
+  )
+  .build();
+
+// Process and respond
+const result = 30; // calculation result
+const rpcResponse = new ContainerBuilder('rpc')
+  .setSource('service-b')
+  .setTarget('service-a')
+  .setMessageType('calculate.result')
+  .addValue(IntValue.create('sum', result).value!)
+  .build();
+```
+
+### Header Extraction
+
+```typescript
+import { MessageHeaderUtils, HeaderFields } from '@kcenon/container-system';
+
+// Extract all headers at once
+const header = MessageHeaderUtils.extractHeader(container);
+
+// Or extract individual headers
+const sourceId = MessageHeaderUtils.getSourceId(container);
+const targetId = MessageHeaderUtils.getTargetId(container);
+const messageType = MessageHeaderUtils.getMessageType(container);
+
+// Direct field access
+const manualSourceId = container.tryGet(HeaderFields.SOURCE_ID);
+```
+
+## Dependency Injection Support
+
+The DI module provides factory interfaces and default implementations for integration with Node.js DI frameworks.
+
+### Overview
+
+Benefits of using the DI module:
+- **Testability**: Mock factories in unit tests
+- **Modularity**: Decouple container creation from usage
+- **Framework Integration**: Works with NestJS, InversifyJS, and other DI containers
+- **Consistency**: Standardized factory interfaces
+
+### DI Tokens
+
+```typescript
+import { DI_TOKENS } from '@kcenon/container-system';
+
+// Available tokens
+DI_TOKENS.CONTAINER_FACTORY        // Symbol for IContainerFactory
+DI_TOKENS.CONTAINER_BUILDER_FACTORY // Symbol for IContainerBuilderFactory
+```
+
+### Interfaces
+
+#### IContainerFactory
+
+```typescript
+interface IContainerFactory {
+  create(options?: ContainerOptions): Container;
+}
+
+interface ContainerOptions {
+  name?: string;
+}
+```
+
+#### IContainerBuilderFactory
+
+```typescript
+interface IContainerBuilderFactory {
+  create(options?: ContainerBuilderOptions): ContainerBuilder;
+}
+
+interface ContainerBuilderOptions {
+  name?: string;
+}
+```
+
+### Default Implementations
+
+```typescript
+import {
+  DefaultContainerFactory,
+  DefaultContainerBuilderFactory
+} from '@kcenon/container-system';
+
+// Direct usage
+const containerFactory = new DefaultContainerFactory();
+const container = containerFactory.create({ name: 'myContainer' });
+
+const builderFactory = new DefaultContainerBuilderFactory();
+const builder = builderFactory.create({ name: 'request' });
+const message = builder
+  .setSource('client')
+  .setMessageType('test')
+  .build();
+```
+
+### NestJS Integration
+
+```typescript
+import { Module, Injectable, Inject } from '@nestjs/common';
+import {
+  DI_TOKENS,
+  IContainerFactory,
+  DefaultContainerFactory,
+  StringValue,
+} from '@kcenon/container-system';
+
+// Module configuration
+@Module({
+  providers: [
+    {
+      provide: DI_TOKENS.CONTAINER_FACTORY,
+      useClass: DefaultContainerFactory,
+    },
+  ],
+  exports: [DI_TOKENS.CONTAINER_FACTORY],
+})
+export class ContainerModule {}
+
+// Service using the factory
+@Injectable()
+export class DataService {
+  constructor(
+    @Inject(DI_TOKENS.CONTAINER_FACTORY)
+    private readonly containerFactory: IContainerFactory,
+  ) {}
+
+  createUserData(name: string, email: string) {
+    const container = this.containerFactory.create({ name: 'user' });
+    container.add(new StringValue('name', name));
+    container.add(new StringValue('email', email));
+    return container;
+  }
+}
+```
+
+### InversifyJS Integration
+
+```typescript
+import { Container as DIContainer } from 'inversify';
+import { injectable, inject } from 'inversify';
+import {
+  DI_TOKENS,
+  IContainerFactory,
+  IContainerBuilderFactory,
+  DefaultContainerFactory,
+  DefaultContainerBuilderFactory,
+} from '@kcenon/container-system';
+
+// Configure DI container
+const diContainer = new DIContainer();
+
+diContainer
+  .bind<IContainerFactory>(DI_TOKENS.CONTAINER_FACTORY)
+  .to(DefaultContainerFactory)
+  .inSingletonScope();
+
+diContainer
+  .bind<IContainerBuilderFactory>(DI_TOKENS.CONTAINER_BUILDER_FACTORY)
+  .to(DefaultContainerBuilderFactory)
+  .inSingletonScope();
+
+// Service using injection
+@injectable()
+class MessageService {
+  constructor(
+    @inject(DI_TOKENS.CONTAINER_BUILDER_FACTORY)
+    private readonly builderFactory: IContainerBuilderFactory,
+  ) {}
+
+  createMessage(type: string, data: Record<string, string>) {
+    const builder = this.builderFactory.create({ name: 'message' });
+    builder.setMessageType(type);
+
+    for (const [key, value] of Object.entries(data)) {
+      builder.addValue(new StringValue(key, value));
+    }
+
+    return builder.build();
+  }
+}
+```
+
+### Testing with Mocks
+
+```typescript
+import { IContainerFactory, Container } from '@kcenon/container-system';
+
+// Create a mock factory for testing
+class MockContainerFactory implements IContainerFactory {
+  public createCount = 0;
+  public lastOptions?: ContainerOptions;
+
+  create(options?: ContainerOptions): Container {
+    this.createCount++;
+    this.lastOptions = options;
+    return new Container(options?.name ?? 'mock');
+  }
+}
+
+// Use in tests
+describe('MyService', () => {
+  it('should create containers', () => {
+    const mockFactory = new MockContainerFactory();
+    const service = new MyService(mockFactory);
+
+    service.doSomething();
+
+    expect(mockFactory.createCount).toBe(1);
+    expect(mockFactory.lastOptions?.name).toBe('expected-name');
+  });
+});
+```
+
 ## See Also
 
 - [API_REFERENCE.md](API_REFERENCE.md) - Complete API documentation
@@ -665,5 +983,5 @@ console.log(message.data.get('action').getValue()); // 'get_user'
 
 ---
 
-**Last Updated**: 2025-11-26
-**Version**: 1.1.0
+**Last Updated**: 2025-12-17
+**Version**: 1.2.0
