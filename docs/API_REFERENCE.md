@@ -11,11 +11,12 @@
 3. [Value Types](#value-types)
 4. [Container](#container)
 5. [ArrayValue](#arrayvalue)
-6. [Error Handling](#error-handling)
-7. [Serialization](#serialization)
-8. [C++ Wire Protocol](#c-wire-protocol)
-9. [Type Guards](#type-guards)
-10. [Examples](#examples)
+6. [ContainerBuilder](#containerbuilder)
+7. [Error Handling](#error-handling)
+8. [Serialization](#serialization)
+9. [C++ Wire Protocol](#c-wire-protocol)
+10. [Type Guards](#type-guards)
+11. [Examples](#examples)
 
 ---
 
@@ -816,6 +817,152 @@ arr.push(IntValue.create('', 1).value!);
 arr.push(IntValue.create('', 2).value!);
 
 console.log(arr.length()); // 2
+```
+
+---
+
+## ContainerBuilder
+
+Builder pattern for constructing Container instances with standardized message headers.
+
+```typescript
+class ContainerBuilder {
+  constructor(name?: string);
+
+  // Header setters (chainable)
+  setSource(sourceId: string, sourceSubId?: string): this;
+  setTarget(targetId: string, targetSubId?: string): this;
+  setMessageType(messageType: string): this;
+  setMessageVersion(version: string): this;
+
+  // Value management (chainable)
+  addValue(value: Value): this;
+  addValues(...values: Value[]): this;
+
+  // Utilities
+  getHeader(): MessageHeader;
+  reset(): this;
+  build(): Container;
+
+  // Static factory
+  static create(name?: string): ContainerBuilder;
+}
+```
+
+### MessageHeader Interface
+
+```typescript
+interface MessageHeader {
+  sourceId?: string;
+  sourceSubId?: string;
+  targetId?: string;
+  targetSubId?: string;
+  messageType?: string;
+  messageVersion?: string;
+}
+```
+
+### HeaderFields Constants
+
+```typescript
+const HeaderFields = {
+  SOURCE_ID: '__source_id',
+  SOURCE_SUB_ID: '__source_sub_id',
+  TARGET_ID: '__target_id',
+  TARGET_SUB_ID: '__target_sub_id',
+  MESSAGE_TYPE: '__message_type',
+  MESSAGE_VERSION: '__message_version',
+} as const;
+```
+
+### MessageHeaderUtils
+
+Utility functions for extracting header values from containers.
+
+```typescript
+const MessageHeaderUtils = {
+  getSourceId(container: Container): string | undefined;
+  getSourceSubId(container: Container): string | undefined;
+  getTargetId(container: Container): string | undefined;
+  getTargetSubId(container: Container): string | undefined;
+  getMessageType(container: Container): string | undefined;
+  getMessageVersion(container: Container): string | undefined;
+  extractHeader(container: Container): MessageHeader;
+};
+```
+
+### Basic Usage
+
+```typescript
+import {
+  ContainerBuilder,
+  StringValue,
+  IntValue,
+  MessageHeaderUtils
+} from '@kcenon/container-system';
+
+// Create a message container with fluent API
+const container = new ContainerBuilder('request')
+  .setSource('client-1', 'session-abc')
+  .setTarget('server-1')
+  .setMessageType('user.create')
+  .setMessageVersion('1.0')
+  .addValue(new StringValue('username', 'alice'))
+  .addValue(IntValue.create('age', 25).value!)
+  .build();
+
+// Container now has header values and user data
+console.log(container.size()); // 8 (6 headers + 2 values)
+```
+
+### Extracting Headers
+
+```typescript
+import { Container, MessageHeaderUtils } from '@kcenon/container-system';
+
+// Extract individual header values
+const sourceId = MessageHeaderUtils.getSourceId(container);
+const messageType = MessageHeaderUtils.getMessageType(container);
+
+// Extract all headers at once
+const header = MessageHeaderUtils.extractHeader(container);
+console.log(header.sourceId);     // 'client-1'
+console.log(header.sourceSubId);  // 'session-abc'
+console.log(header.targetId);     // 'server-1'
+console.log(header.messageType);  // 'user.create'
+```
+
+### Builder Reuse
+
+```typescript
+import { ContainerBuilder, StringValue } from '@kcenon/container-system';
+
+const builder = new ContainerBuilder('message')
+  .setSource('client')
+  .setMessageType('ping');
+
+// Build multiple messages
+const msg1 = builder.setTarget('server-1').build();
+const msg2 = builder.setTarget('server-2').build();
+
+// Reset and start fresh
+builder.reset();
+const msg3 = builder
+  .setSource('new-client')
+  .setMessageType('pong')
+  .build();
+```
+
+### Static Factory Method
+
+```typescript
+import { ContainerBuilder } from '@kcenon/container-system';
+
+// Using static factory method
+const container = ContainerBuilder.create('data')
+  .setSource('service')
+  .setMessageType('notification')
+  .build();
 ```
 
 ---

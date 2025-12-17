@@ -3,3 +3,6 @@ export * from './core';
 
 // Value implementations
 export * from './values';
+
+// Messaging utilities
+export * from './messaging';

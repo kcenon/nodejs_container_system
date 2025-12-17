@@ -274,6 +274,46 @@ console.log(name.getValue()); // "test"
 container.getAs('name', BoolValue); // Error!
 ```
 
+## ContainerBuilder
+
+For creating containers with standardized message headers, use the builder pattern:
+
+```typescript
+import {
+  ContainerBuilder,
+  StringValue,
+  IntValue,
+  MessageHeaderUtils
+} from '@kcenon/container-system';
+
+// Create a message container with fluent API
+const container = new ContainerBuilder('request')
+  .setSource('client-1', 'session-abc')
+  .setTarget('server-1')
+  .setMessageType('user.create')
+  .setMessageVersion('1.0')
+  .addValue(new StringValue('username', 'alice'))
+  .addValue(IntValue.create('age', 25).value!)
+  .build();
+
+// Extract headers from container
+const header = MessageHeaderUtils.extractHeader(container);
+console.log(header.sourceId);     // 'client-1'
+console.log(header.messageType);  // 'user.create'
+```
+
+### Builder Methods
+
+- `setSource(sourceId, sourceSubId?)`: Set source identifier
+- `setTarget(targetId, targetSubId?)`: Set target identifier
+- `setMessageType(type)`: Set message type
+- `setMessageVersion(version)`: Set message version
+- `addValue(value)`: Add a single value
+- `addValues(...values)`: Add multiple values
+- `getHeader()`: Get current header configuration
+- `reset()`: Clear all headers and values
+- `build()`: Create the Container
+
 ## C++ Wire Protocol
 
 For cross-language messaging with C++ systems, use the text-based wire protocol:
