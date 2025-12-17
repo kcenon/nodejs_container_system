@@ -1,7 +1,7 @@
 # Project Structure
 
-**Version**: 1.1.0
-**Last Updated**: 2025-11-26
+**Version**: 1.2.0
+**Last Updated**: 2025-12-17
 
 ## Overview
 
@@ -16,12 +16,20 @@ nodejs_container_system/
 │   │   ├── value.ts             # Value interface and BaseValue
 │   │   ├── types.ts             # ValueType enum, error types, constants
 │   │   ├── container.ts         # Container and ArrayValue
+│   │   ├── value_store.ts       # Domain-agnostic value storage
+│   │   ├── wire_protocol.ts     # C++ wire protocol serialization
 │   │   └── index.ts             # Core module exports
 │   ├── values/                  # Concrete value types
 │   │   ├── null_value.ts        # NullValue implementation
 │   │   ├── numeric_values.ts    # Numeric value types (Bool, Int, Float, etc.)
 │   │   ├── string_values.ts     # StringValue and BytesValue
 │   │   └── index.ts             # Values module exports
+│   ├── messaging/               # Messaging utilities
+│   │   ├── ContainerBuilder.ts  # Builder pattern for containers
+│   │   └── index.ts             # Messaging module exports
+│   ├── di/                      # Dependency Injection support
+│   │   ├── tokens.ts            # DI tokens, interfaces, and factories
+│   │   └── index.ts             # DI module exports
 │   └── index.ts                 # Main entry point
 ├── tests/                       # Test suite
 │   ├── container.test.ts        # Basic container tests
@@ -115,6 +123,41 @@ Implements Container and ArrayValue.
 - Deserialization logic for all value types
 - Nested structure support
 
+#### `value_store.ts`
+
+Domain-agnostic value storage without messaging-specific fields.
+
+**Exports**:
+- `ValueStore` - General-purpose key-value storage
+- `ValueStoreStats` - Statistics tracking interface
+- `ValueFactory` - Value factory function type
+- `BINARY_VERSION` - Binary format version constant
+
+**Responsibilities**:
+- Type-safe value storage
+- JSON/Binary serialization support
+- Statistics tracking (read/write/serialization counts)
+- Key-value storage interface
+
+#### `wire_protocol.ts`
+
+C++ wire protocol serialization/deserialization for cross-language compatibility.
+
+**Exports**:
+- `serializeCppWire()` - Serialize container to wire format
+- `deserializeCppWire()` - Deserialize wire format to container
+- `isCppWireFormat()` - Check if string is wire format
+- `serializeContainerDataOnly()` - Serialize data section only
+- `HeaderFieldId` - Header field ID constants
+- `WireProtocolHeader` - Header interface
+- `WireProtocolMessage` - Message interface
+
+**Responsibilities**:
+- Text-based wire format compatible with C++, Python, .NET, Go, Rust
+- Header and data section parsing
+- Special character escaping/unescaping
+- Nested container and array support
+
 ### Values Module (`src/values/`)
 
 The values module provides concrete value type implementations.
@@ -154,6 +197,80 @@ The values module provides concrete value type implementations.
 - String value implementation with UTF-8 encoding
 - Binary data value implementation
 
+### Messaging Module (`src/messaging/`)
+
+The messaging module provides utilities for building containers with standardized message headers.
+
+#### `ContainerBuilder.ts`
+
+Builder pattern for constructing Container instances with fluent API.
+
+**Exports**:
+- `ContainerBuilder` - Fluent builder for containers
+- `HeaderFields` - Standard header field name constants
+- `MessageHeader` - Header configuration interface
+- `MessageHeaderUtils` - Helper functions for header extraction
+
+**Responsibilities**:
+- Fluent API for container construction
+- Standardized message header management
+- Source/target routing information
+- Message type and version metadata
+
+**Example**:
+```typescript
+const container = new ContainerBuilder('request')
+  .setSource('client-1', 'session-abc')
+  .setTarget('server-1')
+  .setMessageType('user.create')
+  .addValue(new StringValue('username', 'alice'))
+  .build();
+```
+
+### DI Module (`src/di/`)
+
+The DI module provides dependency injection support for integration with Node.js frameworks.
+
+#### `tokens.ts`
+
+DI tokens, interfaces, and factory implementations.
+
+**Exports**:
+- `DI_TOKENS` - Standard DI tokens (`CONTAINER_FACTORY`, `CONTAINER_BUILDER_FACTORY`)
+- `ContainerOptions` - Options for creating containers
+- `ContainerBuilderOptions` - Options for creating builders
+- `IContainerFactory` - Factory interface for Container instances
+- `IContainerBuilderFactory` - Factory interface for ContainerBuilder instances
+- `DefaultContainerFactory` - Default IContainerFactory implementation
+- `DefaultContainerBuilderFactory` - Default IContainerBuilderFactory implementation
+
+**Responsibilities**:
+- Framework-agnostic DI tokens
+- Factory interfaces for testability
+- NestJS and InversifyJS integration support
+- Decoupled container creation
+
+**Example** (NestJS):
+```typescript
+@Module({
+  providers: [
+    {
+      provide: DI_TOKENS.CONTAINER_FACTORY,
+      useClass: DefaultContainerFactory,
+    },
+  ],
+  exports: [DI_TOKENS.CONTAINER_FACTORY],
+})
+export class ContainerModule {}
+```
+
+**Example** (InversifyJS):
+```typescript
+container.bind<IContainerFactory>(DI_TOKENS.CONTAINER_FACTORY)
+  .to(DefaultContainerFactory)
+  .inSingletonScope();
+```
+
 ### Main Entry Point (`src/index.ts`)
 
 The main entry point re-exports all public APIs.
@@ -172,10 +289,14 @@ The main entry point re-exports all public APIs.
 |------|---------|----------|
 | `container.test.ts` | Basic container operations | Add, get, remove, keys, size |
 | `container_advanced.test.ts` | Advanced features | Type-safe retrieval, nesting, cloning |
+| `container_builder.test.ts` | ContainerBuilder fluent API | Builder methods, header fields, message creation |
 | `null_value.test.ts` | Null value tests | Creation, serialization, round-trip |
 | `numeric_values.test.ts` | Numeric value tests | All numeric types, range validation |
 | `long_range_checking.test.ts` | Long/ULong validation | 32-bit enforcement, overflow detection |
 | `cross_language.test.ts` | Cross-language compatibility | Type ID mapping, wire format |
+| `wire_protocol.test.ts` | C++ wire protocol tests | Serialization, deserialization, escaping |
+| `value_store.test.ts` | ValueStore tests | Storage, serialization, statistics |
+| `di.test.ts` | Dependency injection tests | Factory interfaces, DI tokens |
 | `security_validation.test.ts` | Security tests | DoS protection, safety limits |
 | `generate_test_data.ts` | Test data generator | Creates binary files for other languages |
 
@@ -315,6 +436,44 @@ export {
   DoubleValue,
 } from './values/numeric_values';
 export { StringValue, BytesValue } from './values/string_values';
+
+// ValueStore
+export {
+  ValueStore,
+  ValueStoreStats,
+  ValueFactory,
+  BINARY_VERSION,
+} from './core/value_store';
+
+// Wire Protocol
+export {
+  serializeCppWire,
+  deserializeCppWire,
+  isCppWireFormat,
+  serializeContainerDataOnly,
+  HeaderFieldId,
+  WireProtocolHeader,
+  WireProtocolMessage,
+} from './core/wire_protocol';
+
+// Messaging utilities
+export {
+  ContainerBuilder,
+  HeaderFields,
+  MessageHeader,
+  MessageHeaderUtils,
+} from './messaging';
+
+// Dependency Injection support
+export {
+  DI_TOKENS,
+  ContainerOptions,
+  ContainerBuilderOptions,
+  IContainerFactory,
+  IContainerBuilderFactory,
+  DefaultContainerFactory,
+  DefaultContainerBuilderFactory,
+} from './di';
 ```
 
 ### Import Examples
@@ -331,6 +490,30 @@ import { Value, ValueType, Result } from '@kcenon/container-system';
 
 // Import error types
 import { ContainerError, ValueNotFoundError } from '@kcenon/container-system';
+
+// Import messaging utilities
+import {
+  ContainerBuilder,
+  MessageHeaderUtils,
+  HeaderFields,
+} from '@kcenon/container-system';
+
+// Import wire protocol
+import {
+  serializeCppWire,
+  deserializeCppWire,
+  isCppWireFormat,
+} from '@kcenon/container-system';
+
+// Import DI support
+import {
+  DI_TOKENS,
+  IContainerFactory,
+  DefaultContainerFactory,
+} from '@kcenon/container-system';
+
+// Import ValueStore
+import { ValueStore, ValueStoreStats } from '@kcenon/container-system';
 ```
 
 ## Code Style
@@ -455,5 +638,5 @@ import * as container from '@kcenon/container-system';
 
 ---
 
-**Last Updated**: 2025-11-26
-**Version**: 1.1.0
+**Last Updated**: 2025-12-17
+**Version**: 1.2.0
