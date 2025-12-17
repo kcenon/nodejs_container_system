@@ -12,11 +12,12 @@
 4. [Container](#container)
 5. [ArrayValue](#arrayvalue)
 6. [ContainerBuilder](#containerbuilder)
-7. [Error Handling](#error-handling)
-8. [Serialization](#serialization)
-9. [C++ Wire Protocol](#c-wire-protocol)
-10. [Type Guards](#type-guards)
-11. [Examples](#examples)
+7. [Dependency Injection](#dependency-injection)
+8. [Error Handling](#error-handling)
+9. [Serialization](#serialization)
+10. [C++ Wire Protocol](#c-wire-protocol)
+11. [Type Guards](#type-guards)
+12. [Examples](#examples)
 
 ---
 
@@ -963,6 +964,158 @@ const container = ContainerBuilder.create('data')
   .setSource('service')
   .setMessageType('notification')
   .build();
+```
+
+---
+
+## Dependency Injection
+
+The container system provides DI tokens and factory interfaces for integration with Node.js frameworks like NestJS or InversifyJS.
+
+### DI_TOKENS
+
+Standard DI tokens for the container system.
+
+```typescript
+const DI_TOKENS = {
+  CONTAINER_FACTORY: Symbol.for('ContainerFactory'),
+  CONTAINER_BUILDER_FACTORY: Symbol.for('ContainerBuilderFactory'),
+} as const;
+```
+
+### IContainerFactory Interface
+
+Factory interface for creating Container instances.
+
+```typescript
+interface ContainerOptions {
+  name?: string;
+}
+
+interface IContainerFactory {
+  create(options?: ContainerOptions): Container;
+}
+```
+
+### IContainerBuilderFactory Interface
+
+Factory interface for creating ContainerBuilder instances.
+
+```typescript
+interface ContainerBuilderOptions {
+  name?: string;
+}
+
+interface IContainerBuilderFactory {
+  create(options?: ContainerBuilderOptions): ContainerBuilder;
+}
+```
+
+### DefaultContainerFactory
+
+Default implementation of IContainerFactory.
+
+```typescript
+class DefaultContainerFactory implements IContainerFactory {
+  create(options?: ContainerOptions): Container;
+}
+```
+
+**Example**:
+```typescript
+import { DefaultContainerFactory, IContainerFactory } from '@kcenon/container-system';
+
+const factory: IContainerFactory = new DefaultContainerFactory();
+const container = factory.create({ name: 'myContainer' });
+```
+
+### DefaultContainerBuilderFactory
+
+Default implementation of IContainerBuilderFactory.
+
+```typescript
+class DefaultContainerBuilderFactory implements IContainerBuilderFactory {
+  create(options?: ContainerBuilderOptions): ContainerBuilder;
+}
+```
+
+**Example**:
+```typescript
+import { DefaultContainerBuilderFactory, IContainerBuilderFactory } from '@kcenon/container-system';
+
+const factory: IContainerBuilderFactory = new DefaultContainerBuilderFactory();
+const container = factory.create({ name: 'request' })
+  .setSource('client-1')
+  .setMessageType('user.login')
+  .build();
+```
+
+### NestJS Integration
+
+```typescript
+import { Module, Injectable, Inject } from '@nestjs/common';
+import {
+  DI_TOKENS,
+  IContainerFactory,
+  DefaultContainerFactory,
+} from '@kcenon/container-system';
+
+// Module definition
+@Module({
+  providers: [
+    {
+      provide: DI_TOKENS.CONTAINER_FACTORY,
+      useClass: DefaultContainerFactory,
+    },
+  ],
+  exports: [DI_TOKENS.CONTAINER_FACTORY],
+})
+export class ContainerModule {}
+
+// Service usage
+@Injectable()
+class MyService {
+  constructor(
+    @Inject(DI_TOKENS.CONTAINER_FACTORY)
+    private containerFactory: IContainerFactory
+  ) {}
+
+  createData(): Container {
+    return this.containerFactory.create({ name: 'myData' });
+  }
+}
+```
+
+### InversifyJS Integration
+
+```typescript
+import { Container as DIContainer } from 'inversify';
+import { injectable, inject } from 'inversify';
+import {
+  DI_TOKENS,
+  IContainerFactory,
+  DefaultContainerFactory,
+  Container,
+} from '@kcenon/container-system';
+
+// Bind factory
+const diContainer = new DIContainer();
+diContainer.bind<IContainerFactory>(DI_TOKENS.CONTAINER_FACTORY)
+  .to(DefaultContainerFactory)
+  .inSingletonScope();
+
+// Service usage
+@injectable()
+class MyService {
+  constructor(
+    @inject(DI_TOKENS.CONTAINER_FACTORY)
+    private containerFactory: IContainerFactory
+  ) {}
+
+  createData(): Container {
+    return this.containerFactory.create({ name: 'myData' });
+  }
+}
 ```
 
 ---

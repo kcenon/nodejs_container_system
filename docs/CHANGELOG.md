@@ -5,6 +5,18 @@ All notable changes to the nodejs_container_system project will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Dependency Injection support for Node.js frameworks
+  - `IContainerFactory` interface for creating Container instances
+  - `IContainerBuilderFactory` interface for creating ContainerBuilder instances
+  - `DefaultContainerFactory` default implementation
+  - `DefaultContainerBuilderFactory` default implementation
+  - `DI_TOKENS` for InversifyJS and NestJS compatibility
+  - Comprehensive DI tests (`tests/di.test.ts`)
+  - Documentation for NestJS and InversifyJS integration
+
 ## [1.1.0] - 2025-11-26
 
 ### Added

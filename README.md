@@ -354,6 +354,45 @@ const wireWithHeader = serializeCppWire(container, {
 
 The wire format is compatible with the C++ container_system messaging layer.
 
+## Dependency Injection
+
+For integration with DI frameworks like NestJS or InversifyJS:
+
+```typescript
+import {
+  DI_TOKENS,
+  IContainerFactory,
+  DefaultContainerFactory,
+} from '@kcenon/container-system';
+
+// Direct usage
+const factory = new DefaultContainerFactory();
+const container = factory.create({ name: 'myContainer' });
+
+// NestJS module
+@Module({
+  providers: [
+    {
+      provide: DI_TOKENS.CONTAINER_FACTORY,
+      useClass: DefaultContainerFactory,
+    },
+  ],
+  exports: [DI_TOKENS.CONTAINER_FACTORY],
+})
+export class ContainerModule {}
+
+// InversifyJS binding
+diContainer.bind<IContainerFactory>(DI_TOKENS.CONTAINER_FACTORY)
+  .to(DefaultContainerFactory)
+  .inSingletonScope();
+```
+
+Available factories:
+- `DefaultContainerFactory`: Creates `Container` instances
+- `DefaultContainerBuilderFactory`: Creates `ContainerBuilder` instances
+
+See [API_REFERENCE.md](docs/API_REFERENCE.md#dependency-injection) for detailed documentation.
+
 ## Testing
 
 ```bash
