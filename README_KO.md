@@ -276,6 +276,125 @@ console.log(name.getValue()); // "test"
 container.getAs('name', BoolValue); // 오류!
 ```
 
+## ContainerBuilder
+
+표준화된 메시지 헤더가 있는 컨테이너를 생성하려면 빌더 패턴을 사용하세요:
+
+```typescript
+import {
+  ContainerBuilder,
+  StringValue,
+  IntValue,
+  MessageHeaderUtils
+} from '@kcenon/container-system';
+
+// Fluent API로 메시지 컨테이너 생성
+const container = new ContainerBuilder('request')
+  .setSource('client-1', 'session-abc')
+  .setTarget('server-1')
+  .setMessageType('user.create')
+  .setMessageVersion('1.0')
+  .addValue(new StringValue('username', 'alice'))
+  .addValue(IntValue.create('age', 25).value!)
+  .build();
+
+// 컨테이너에서 헤더 추출
+const header = MessageHeaderUtils.extractHeader(container);
+console.log(header.sourceId);     // 'client-1'
+console.log(header.messageType);  // 'user.create'
+```
+
+### 빌더 메서드
+
+- `setSource(sourceId, sourceSubId?)`: 소스 식별자 설정
+- `setTarget(targetId, targetSubId?)`: 대상 식별자 설정
+- `setMessageType(type)`: 메시지 타입 설정
+- `setMessageVersion(version)`: 메시지 버전 설정
+- `addValue(value)`: 단일 값 추가
+- `addValues(...values)`: 여러 값 추가
+- `getHeader()`: 현재 헤더 구성 가져오기
+- `reset()`: 모든 헤더와 값 초기화
+- `build()`: Container 생성
+
+## C++ 와이어 프로토콜
+
+C++ 시스템과의 크로스 언어 메시징을 위해 텍스트 기반 와이어 프로토콜을 사용하세요:
+
+```typescript
+import {
+  Container,
+  StringValue,
+  IntValue,
+  serializeCppWire,
+  deserializeCppWire
+} from '@kcenon/container-system';
+
+// C++ 와이어 포맷으로 직렬화
+const container = new Container('user');
+container.add(new StringValue('name', 'Alice'));
+const ageResult = IntValue.create('age', 30);
+if (ageResult.ok) {
+  container.add(ageResult.value);
+}
+
+const wireString = serializeCppWire(container);
+// 출력: @header{{[5,data_container];[6,1.0];}};@data{{[name,string_value,Alice];[age,int_value,30];}};
+
+// C++ 와이어 포맷에서 역직렬화
+const message = deserializeCppWire(wireString);
+console.log(message.header.messageType); // 'data_container'
+console.log(message.data.get('name').getValue()); // 'Alice'
+
+// 메시징 헤더와 함께 사용
+const wireWithHeader = serializeCppWire(container, {
+  targetId: 'server1',
+  sourceId: 'client1',
+  messageType: 'request',
+  version: '2.0'
+});
+```
+
+와이어 포맷은 C++ container_system 메시징 레이어와 호환됩니다.
+
+## 의존성 주입
+
+NestJS나 InversifyJS 같은 DI 프레임워크와 통합하려면:
+
+```typescript
+import {
+  DI_TOKENS,
+  IContainerFactory,
+  DefaultContainerFactory,
+} from '@kcenon/container-system';
+
+// 직접 사용
+const factory = new DefaultContainerFactory();
+const container = factory.create({ name: 'myContainer' });
+
+// NestJS 모듈
+@Module({
+  providers: [
+    {
+      provide: DI_TOKENS.CONTAINER_FACTORY,
+      useClass: DefaultContainerFactory,
+    },
+  ],
+  exports: [DI_TOKENS.CONTAINER_FACTORY],
+})
+export class ContainerModule {}
+
+// InversifyJS 바인딩
+diContainer.bind<IContainerFactory>(DI_TOKENS.CONTAINER_FACTORY)
+  .to(DefaultContainerFactory)
+  .inSingletonScope();
+```
+
+사용 가능한 팩토리:
+- `DefaultContainerFactory`: `Container` 인스턴스 생성
+- `DefaultContainerBuilderFactory`: `ContainerBuilder` 인스턴스 생성
+
+자세한 문서는 [API_REFERENCE.md](docs/API_REFERENCE.md#dependency-injection)를 참조하세요.
+
 ## 테스트
 
 ```bash
